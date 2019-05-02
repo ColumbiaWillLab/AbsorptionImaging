@@ -286,7 +286,7 @@ def fit_1d(residual, guess, x, data):
     params.add('z0', value = p[3], min = -2, max = 2)
 
     # Do the minimization; redefine the initial guess
-    out = minimize(residual, params, args = (x, data))
+    out = minimize(residual, params, xtol = 1e-3, args = (x, data))
     best = params2list(out.params)
     
     # Convert best to a Parameters() object

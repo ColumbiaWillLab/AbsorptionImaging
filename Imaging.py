@@ -1,3 +1,23 @@
+### HOW TO RUN THIS PROGRAM ###
+"""
+STEP 0. Make sure that mode == 'automatic' down below.
+STEP 1. Run the script using \Imaging Code>python Imaging.py.
+A large white display labeled Figure 1 should pop up on the left monitor.
+STEP 2. Run a single iteration in Cicero; the display should turn black.
+After a few seconds the window will read "(Not Responding)" when clicked.
+STEP 3. When the window is not responding, drag it to the right monitor
+and keep it there fore the duration of data-taking.
+STEP 4. Run as many repeated iterations in Cicero as your heart desires.
+The display will show the background-subtracted absorption image from the
+latest shot, and will update live with each new shot. Do not set the MOT
+loading time below 1s, as the program is not fast enough to keep up.
+STEP 5. Occasionally the 1D Gaussian fit will throw an error and crash the
+program. Start over at step 1. (I am working on fixing this!)
+STEP 6. After the last shot, hit the red X on the top right of the display.
+It will say that python.exe is not responding; close the program.
+Raw data and each live-updated image are saved in their respective folders.
+"""
+
 ##################################################
 ######## 0: CLASSES, FUNCTIONS, LIBRARIES ########
 ##################################################
@@ -28,7 +48,7 @@ import matplotlib.gridspec as gridspec
 import Helper as hp
 
 # mode = 'manual' or 'automatic'
-mode = 'manual'
+mode = 'automatic'
 
 stop = time.clock()
 print("Initializing took " + str(round(stop - start, 2)) + " seconds")
@@ -39,6 +59,8 @@ print(" ")
 ##################################################
 
 shot = 1
+plt.figure(figsize = (20,13))
+plt.show(block=False)
 
 # main data analysis loop; runs until ctrl+c or ctrl+. interrupts
 while True:
@@ -48,7 +70,6 @@ while True:
 
     print("1: READ FILES AND CREATE DATA")
     print("-------------------------------")
-    start = time.clock()
     
     count = 0
     despacito2 = []
@@ -80,12 +101,11 @@ while True:
             
             before = after
     except hp.MyExcept:
-        plt.close()
+        start = time.clock()
     despacito2.sort() # make sure the images are in order
     
     # read images into large arrays of pixel values    
     print("Writing image data into arrays")
-    print(despacito2)
     data = imageio.imread(despacito2[0])
     beam = imageio.imread(despacito2[1])
     dark = imageio.imread(despacito2[2])
@@ -113,7 +133,7 @@ while True:
     pixels = [0, pixelsize * width, pixelsize * height, 0]
 
     # create fake data for laser & atom sample; do background subtraction
-    kernel = 2
+    kernel = 1
     noise = 1   
     # data, beam, dark = fake_data(laser, atoms, noise)
     transmission = hp.subtraction(data, beam, dark, kernel)
@@ -189,7 +209,7 @@ while True:
         guess = [amp, x0, y0, sigma_x, sigma_y, 0, z0]
         
         # run the zoomed-in fit and compute its relative error
-        fine_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse, 1)
+        fine_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse,1)
         best[1] = best[1] + r[0]
         best[2] = best[2] + r[1]
         error = (coarse - fine_fit) / coarse
@@ -247,13 +267,15 @@ while True:
 
     # sodium and camera parameters
     lam = 589.158e-9 # resonant wavelength
+    delta = 0 # detuning :)
     sigma_0 = (3.0/(2.0*math.pi)) * (lam)**2 # cross-section
+    sigma = sigma_0 / (1 + delta**2) # cross-section off resonance
     area = (pixelsize * 1e-3)**2 # pixel area in SI units
     
     density = -np.log(transmission)
     if mode == 'manual':
         density = -np.log(zoomed)
-    atom_num = (area/sigma_0) * np.sum(density)
+    atom_num = (area/sigma) * np.sum(density)
     print("Atom number: " + str(np.round(atom_num/1e6, 2)) + " million")
 
     stop = time.clock()
@@ -307,88 +329,80 @@ while True:
     ######### 6: SAVE AND DISPLAY FINAL PLOT #########
     ##################################################
 
-    # create figure: 3x3 grid (boxes labeled 0-8) containing:
-    # - title (1);
-    # - best-fit parameter outputs (8)
-    # - horizontal (4) and vertical (6) plots
-    # - transmission plot, in color (7)
-    # - empty boxes: 0, 2, 3, 5
+    # create figure: 2x3 grid (boxes labeled 0-5) containing:
+    # - best-fit parameter outputs (5)
+    # - horizontal (1) and vertical (3) plots
+    # - transmission plot, in color (4)
+    # - empty boxes: 0, 2
     
     print("6: SAVE AND DISPLAY FINAL PLOT")
     print("-------------------------------")
     start = time.clock()
 
     print("Painting Gaussian fits in oil")
-    norm_min = -0.1
-    norm_max = 1
+    norm_min = -0.01
+    norm_max = 0.99
     norm = plt.Normalize(norm_min, norm_max)
     
     fig = plt.figure(1)
-    wr = [0.5, 5, 0.5]
-    hr = [0.001, 0.5, 4]
-    gs = gridspec.GridSpec(3, 3, width_ratios = wr, height_ratios = hr)
-    font = {'size'   : 6}
+    wr = [0.9, 8, 1.1]
+    hr = [1, 9]
+    gs = gridspec.GridSpec(2, 3, width_ratios = wr, height_ratios = hr)
+    font = {'size'   : 16}
     plt.rc('font', **font)
 
-    # title and pixel scale
-    ax1 = plt.subplot(gs[1])
-    plt.axis('off')
-    title = 'Gaussian Fit to Absorption Data: shot ' + str(shot)
-    plt.text(0.1, 1, title, fontsize = 10)
-
-    # best-fit parameters: convert to text
+    # convert best-fit parameters to text
+    title = 'Shot ' + str(shot)
     A = str(np.round(best[0], 2))
     x_0 = str(np.round(pixelsize * best[1], 3))
     y_0 = str(np.round(pixelsize * best[2], 3))
     w_x = str(np.round(2 * pixelsize * best[3], 3))
     w_y = str(np.round(2 * pixelsize * best[4], 3))
-    # w_x = str(np.round(2 * pixelsize * param_h[2], 2))
-    # w_y = str(np.round(2 * pixelsize * param_v[2], 2))
-    (theta, z_0) = (str(np.round(best[5], 2)), str(np.round(best[6], 2)))
+    theta = str(np.round(best[5], 2))
+    z_0 = str(np.round(best[6], 2))
 
-    text1 = 'Best-fit parameters:'
-    text2 = 'A = ' + A
-    text3 = 'x_0 = ' + x_0
-    text4 = 'y_0 = ' + y_0
-    text5 = 'w_x = '+ w_x
-    text6 = 'w_y = '+ w_y
-    # text7 = 'theta = '+ theta + ' rad'
-    text8 = 'N = ' + str(np.round(atom_num/1000000.0, 2)) + ' million'
+    text1 = 'A = ' + A
+    text2 = 'x_0 = ' + x_0
+    text3 = 'y_0 = ' + y_0
+    text4 = 'w_x = '+ w_x
+    text5 = 'w_y = '+ w_y
+    # text6 = 'theta = '+ theta + ' rad'
+    text7 = 'N = ' + str(np.round(atom_num/1000000.0, 2)) + ' million'
 
     # best-fit parameters: display
-    ax8 = plt.subplot(gs[8])
+    ax5 = plt.subplot(gs[5])
     plt.axis('off')
-    plt.text(0, 0.8, text1)
-    plt.text(0, 0.7, text2)
-    plt.text(0, 0.6, text3)
-    plt.text(0, 0.5, text4)
-    plt.text(0, 0.4, text5)
-    plt.text(0, 0.3, text6)
-    plt.text(0, 0.2, text8)
+    plt.text(0, 0.9, title, fontsize = 24)
+    plt.text(0, 0.7, text1)
+    plt.text(0, 0.6, text2)
+    plt.text(0, 0.5, text3)
+    plt.text(0, 0.4, text4)
+    plt.text(0, 0.3, text5)
+    plt.text(0, 0.2, text7)
 
     # horizontal and vertical 1D fits
-    ax4 = plt.subplot(gs[4])
-    plt.plot(x_axis, 1 - horizontal, 'ko', markersize = 1)
-    plt.plot(x_axis, 1 - fit_h, 'r', linewidth = 0.5)
+    ax1 = plt.subplot(gs[1])
+    plt.plot(x_axis, 1 - horizontal, 'ko', markersize = 2)
+    plt.plot(x_axis, 1 - fit_h, 'r', linewidth = 1)
     plt.xlim(0, width)
     plt.ylim(norm_min, norm_max)
     plt.gca().axes.get_xaxis().set_visible(False)
 
-    ax6 = plt.subplot(gs[6])
-    plt.plot(1 - vertical, y_axis, 'ko', markersize = 1)
-    plt.plot(1 - fit_v, y_axis, 'r', linewidth = 0.5)
+    ax3 = plt.subplot(gs[3])
+    plt.plot(1 - vertical, y_axis, 'ko', markersize = 2)
+    plt.plot(1 - fit_v, y_axis, 'r', linewidth = 1)
     plt.xlim(norm_max, norm_min)
     plt.ylim(height, 0)
     plt.gca().axes.get_yaxis().set_visible(False)
 
     # transmission plot with axis lines and zoom box
-    ax7 = plt.subplot(gs[7])
-    plt.imshow(1 - transmission, cmap='inferno', norm=norm, extent=pixels)
+    ax4 = plt.subplot(gs[4])
+    plt.imshow(1 - transmission, cmap='gray', norm=norm, extent=pixels)
     plt.plot(pixelsize*x_hor, pixelsize*y_hor, color = 'g', linewidth = 0.5)
     plt.plot(pixelsize*x_ver, pixelsize*y_ver, color = 'g', linewidth = 0.5)
 
     plt.xlim(pixels[0], pixels[1])
-    plt.ylim(pixels[2], pixels[3])
+    plt.ylim(pixels[3], pixels[2]) # y-axis is upside down!
 
     # save best-fit parameters and image to files
     save_path = '..'
@@ -402,13 +416,11 @@ while True:
     diary_text = (now, np.round(best, 2), np.round(int_error, 2))
     diary.write("Time: %s. Fit: %s. Error: %s. \n" % diary_text)
     diary.close()
-    plt.savefig(pic_path, dpi = 500)
 
     plt.ion()
-    plt.pause(.1)
+    plt.pause(.01)
     plt.draw()
-    plt.show(block=False)
-
+    plt.savefig(pic_path, dpi = 150)
 
     stop = time.clock()
     final = time.clock()
