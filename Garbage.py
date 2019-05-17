@@ -190,6 +190,22 @@ def zoom_in(data, params, f):
     print("Zooming in: (" +str(x_ext)+" p) x ("+str(y_ext)+" p)")
     return zoomed, dim
 
+def minimizer(residual, params, x,y, data):
+    """
+    INPUT: residual is the function to be minimized;
+    params contains the parameters to be optimized;
+    data contains the data to be fitted to the model.
+    OUTPUT: best-fit parameters and set of data based on them.
+    """
+
+    # Perform the minimization
+    out = minimize(residual, params, xtol = 1e-3, args = (x,y, data))
+    best = params2list(out.params)
+    param0 = list2params(best)
+
+    # Generate best-fit data
+    fit_data = 1 - gaussian(param0, x,y)
+    return fit_data, best
 # easy lines
 def easy_lines(x, x0, y0):
     """

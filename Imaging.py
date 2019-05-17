@@ -47,8 +47,28 @@ import matplotlib.gridspec as gridspec
 # all function definitions and classes
 import Helper as hp
 
-# mode = 'manual' or 'automatic'
-mode = 'automatic'
+# helpful variables to play with
+shot = 0
+mode = 'automatic' # auto or manual
+kernel = 3 # for gaussian smoothing
+n = 1 # number of fit iterations
+mag = 2.5 # magnification
+
+pixelsize = 3.75e-3 # 3.75 um, reported in mm.
+lam = 589.158e-9 # resonant wavelength
+delta = 2*math.pi * 8  # beam detuning in MHz
+Gamma = 2*math.pi * 9.7946 # D2 linewidth in MHz
+
+# de-enhanging factor
+if mode == 'automatic':
+    f = 5
+elif mode == 'manual':
+    f = 3
+norm_min = -0.1 # absolute color scale min
+norm_max = 1.0 # absolute color scale max
+c = 'gray' # colormap for plotting
+plt.figure(figsize = (20,13)) # dimensions of final plot
+plt.show(block=False) # continue computation
 
 stop = time.clock()
 print("Initializing took " + str(round(stop - start, 2)) + " seconds")
@@ -57,10 +77,6 @@ print(" ")
 ##################################################
 ######### 1: READ FILES AND CREATE DATA ##########
 ##################################################
-
-shot = 1
-plt.figure(figsize = (20,13))
-plt.show(block=False)
 
 # main data analysis loop; runs until ctrl+c or ctrl+. interrupts
 while True:
@@ -74,14 +90,14 @@ while True:
     count = 0
     despacito2 = []
     path_to_watch = "."
-    before = dict([(f, None) for f in os.listdir(path_to_watch)])
+    before = dict([(a, None) for a in os.listdir(path_to_watch)])
     print("Watching for new files...")
     
     try: # main file monitoring loop - counts to 3
         while True:
-            after = dict ([(f, None) for f in os.listdir (path_to_watch)])
-            added = [f for f in after if not f in before]
-            removed = [f for f in before if not f in after]
+            after = dict ([(a, None) for a in os.listdir (path_to_watch)])
+            added = [a for a in after if not a in before]
+            removed = [a for a in before if not a in after]
             
             if added: # append filename to despacito2; move counter up
                 print "Added: ", ", ".join(added)
@@ -126,14 +142,12 @@ while True:
 
     # create a meshgrid: each pixel is (3.75 um) x (3.75 um); images
     # have resolution (964 p) x (1292 p) --> (3.615 mm) x (4.845 mm).
-    pixelsize = 3.75e-3 # 3.75 um, reported in mm.
     x = np.linspace(0, width, width)
     y = np.linspace(0, height, height)
     (x,y) = np.meshgrid(x,y)
     pixels = [0, pixelsize * width, pixelsize * height, 0]
 
     # create fake data for laser & atom sample; do background subtraction
-    kernel = 1
     noise = 1   
     # data, beam, dark = fake_data(laser, atoms, noise)
     transmission = hp.subtraction(data, beam, dark, kernel)
@@ -142,14 +156,13 @@ while True:
     # show transmission plot - debugging purposes only
     plt.close()
     plt.figure(1)
-    plt.imshow(transmission, cmap = 'inferno', extent = pixels)
+    plt.imshow(transmission, cmap = c, extent = pixels)
     plt.colorbar()
     plt.draw() # display now; keep computing
     """
 
     stop = time.clock()
     print("Writing data took " + str(round(stop - start, 2)) + " seconds")
-
     print(" ")
 
     ##################################################
@@ -165,8 +178,6 @@ while True:
 
     # compute parameters automatically
     if mode == 'automatic':
-        f = 5
-        
         # coarsen the image; create a coarse meshgrid for plotting
         coarse = hp.de_enhance(transmission, f)
         x_c = np.linspace(f, len(coarse[0])*f, len(coarse[0]))
@@ -177,7 +188,7 @@ while True:
         (y0, x0, peak) = hp.peak_find(coarse, f) # guess an initial center point
         (amp, z0) = (transmission[0][0] - peak, 1 - transmission[0][0])
         guess = [amp, x0, y0, 200, 200, 0, z0]
-        coarse_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse,1)
+        coarse_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse,n)
 
         # compute the relative error from the coarse fit
         error = (coarse - coarse_fit) / coarse
@@ -187,8 +198,6 @@ while True:
         
     # guess parameters based on user input
     elif mode == 'manual':
-        f = 3
-        
         # allow the user to select a region of interest
         r = cv2.selectROI(transmission)
         cv2.waitKey(0)
@@ -209,7 +218,7 @@ while True:
         guess = [amp, x0, y0, sigma_x, sigma_y, 0, z0]
         
         # run the zoomed-in fit and compute its relative error
-        fine_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse,1)
+        fine_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse,n)
         best[1] = best[1] + r[0]
         best[2] = best[2] + r[1]
         error = (coarse - fine_fit) / coarse
@@ -250,8 +259,13 @@ while True:
     guess_v = np.array([best[0], best[2], best[4], best[6]])
 
     # perform the horizontal and vertical 1D fits
-    fit_h, param_h = hp.fit_1d(hp.residual_1d, guess_h, x_axis, horizontal)
-    fit_v, param_v = hp.fit_1d(hp.residual_1d, guess_v, y_axis, vertical)
+    try:
+        fit_h, param_h = hp.fit_1d(hp.residual_1d, guess_h, x_axis, horizontal)
+        fit_v, param_v = hp.fit_1d(hp.residual_1d, guess_v, y_axis, vertical)
+    except:
+        print("Threw a 1D fit tantrum")
+        fit_h = 1 - hp.gaussian_1d(list2params(guess_h), x_axis)
+        fit_v = 1 - hp.gaussian_1d(list2params(guess_v), y_axis)
 
     stop = time.clock()
     print("1D fitting took " + str(round(stop - start, 2)) + " seconds")
@@ -266,11 +280,9 @@ while True:
     start = time.clock()
 
     # sodium and camera parameters
-    lam = 589.158e-9 # resonant wavelength
-    delta = 0 # detuning :)
-    sigma_0 = (3.0/(2.0*math.pi)) * (lam)**2 # cross-section
-    sigma = sigma_0 / (1 + delta**2) # cross-section off resonance
-    area = (pixelsize * 1e-3)**2 # pixel area in SI units
+    sigma_0 = ( 3.0 / (2.0 * math.pi) ) * (lam)**2 # cross-section
+    sigma = sigma_0 / ( 1 + ( delta / ( Gamma / 2 ) )**2 ) # off resonance
+    area = ( pixelsize * 1e-3 * mag )**2 # pixel area in SI units
     
     density = -np.log(transmission)
     if mode == 'manual':
@@ -293,22 +305,22 @@ while True:
     # preliminary plots: 3 images and transmission
     """
     plt.figure(1)
-    plt.imshow(data, cmap = 'inferno', extent = pixels)
+    plt.imshow(data, cmap = c, extent = pixels)
     plt.colorbar()
     plt.figure(2)
-    plt.imshow(beam, cmap = 'inferno', extent = pixels)
+    plt.imshow(beam, cmap = c, extent = pixels)
     plt.colorbar()
     plt.figure(3)
-    plt.imshow(dark, cmap = 'inferno', extent = pixels)
+    plt.imshow(dark, cmap = c, extent = pixels)
     plt.colorbar()
     plt.figure(4)
-    plt.imshow(data - dark, cmap = 'inferno', extent = pixels)
+    plt.imshow(data - dark, cmap = c, extent = pixels)
     plt.colorbar()
     plt.figure(5)
-    plt.imshow(beam - dark, cmap = 'inferno', extent = pixels)
+    plt.imshow(beam - dark, cmap = c, extent = pixels)
     plt.colorbar()
     plt.figure(6)
-    plt.imshow(transmission, cmap = 'inferno', extent = pixels)
+    plt.imshow(transmission, cmap = c, extent = pixels)
     plt.colorbar()
     plt.show()
     """
@@ -316,7 +328,7 @@ while True:
     # coarse and fine fits, and relative errors
     """
     plt.figure(1)
-    plt.imshow(final_error, cmap = 'inferno', extent = pixels)
+    plt.imshow(final_error, cmap = c, extent = pixels)
     plt.colorbar()
     plt.show()
     """
@@ -340,8 +352,6 @@ while True:
     start = time.clock()
 
     print("Painting Gaussian fits in oil")
-    norm_min = -0.01
-    norm_max = 0.99
     norm = plt.Normalize(norm_min, norm_max)
     
     fig = plt.figure(1)
@@ -356,16 +366,16 @@ while True:
     A = str(np.round(best[0], 2))
     x_0 = str(np.round(pixelsize * best[1], 3))
     y_0 = str(np.round(pixelsize * best[2], 3))
-    w_x = str(np.round(2 * pixelsize * best[3], 3))
-    w_y = str(np.round(2 * pixelsize * best[4], 3))
+    w_x = str(np.round(pixelsize * best[3], 3))
+    w_y = str(np.round(pixelsize * best[4], 3))
     theta = str(np.round(best[5], 2))
     z_0 = str(np.round(best[6], 2))
 
     text1 = 'A = ' + A
     text2 = 'x_0 = ' + x_0
     text3 = 'y_0 = ' + y_0
-    text4 = 'w_x = '+ w_x
-    text5 = 'w_y = '+ w_y
+    text4 = 'sigma_x = '+ w_x
+    text5 = 'sigma_y = '+ w_y
     # text6 = 'theta = '+ theta + ' rad'
     text7 = 'N = ' + str(np.round(atom_num/1000000.0, 2)) + ' million'
 
@@ -381,6 +391,7 @@ while True:
     plt.text(0, 0.2, text7)
 
     # horizontal and vertical 1D fits
+
     ax1 = plt.subplot(gs[1])
     plt.plot(x_axis, 1 - horizontal, 'ko', markersize = 2)
     plt.plot(x_axis, 1 - fit_h, 'r', linewidth = 1)
@@ -391,13 +402,14 @@ while True:
     ax3 = plt.subplot(gs[3])
     plt.plot(1 - vertical, y_axis, 'ko', markersize = 2)
     plt.plot(1 - fit_v, y_axis, 'r', linewidth = 1)
+    plt.plot()
     plt.xlim(norm_max, norm_min)
-    plt.ylim(height, 0)
+    plt.ylim(0, height)
     plt.gca().axes.get_yaxis().set_visible(False)
 
     # transmission plot with axis lines and zoom box
     ax4 = plt.subplot(gs[4])
-    plt.imshow(1 - transmission, cmap='gray', norm=norm, extent=pixels)
+    plt.imshow(1 - transmission, cmap=c, norm=norm, extent=pixels)
     plt.plot(pixelsize*x_hor, pixelsize*y_hor, color = 'g', linewidth = 0.5)
     plt.plot(pixelsize*x_ver, pixelsize*y_ver, color = 'g', linewidth = 0.5)
 

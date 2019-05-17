@@ -30,7 +30,7 @@ def subtraction(data, beam, dark, kernel):
     image = data.astype(int) - dark.astype(int)
     transmission = image.astype(float) / background.astype(float)
     time.sleep(.01)
-    transmission[background <= 3] = 1
+    transmission[background <= 7] = 1
     time.sleep(.01)
 
     print("Applying Gaussian filter of size " + str(kernel))
@@ -146,27 +146,11 @@ def residual(params, x,y, data):
 
     model = 1 - gaussian(params, x,y)
     return (model - data).flatten()
-def minimizer(residual, params, x,y, data):
-    """
-    INPUT: residual is the function to be minimized;
-    params contains the parameters to be optimized;
-    data contains the data to be fitted to the model.
-    OUTPUT: best-fit parameters and set of data based on them.
-    """
-
-    # Perform the minimization
-    out = minimize(residual, params, xtol = 1e-3, args = (x,y, data))
-    best = params2list(out.params)
-    param0 = list2params(best)
-
-    # Generate best-fit data
-    fit_data = 1 - gaussian(param0, x,y)
-    return fit_data, best
 def iterfit(residual, guess, x,y, width,height, data, num):
     """
     INPUT: residual is the function (model - data) to be minimized;
-    guess contains the starting parameters for fitting by minimizer;
-    data is the data to be fitted; num = # of fitting iterations.
+    guess contains the starting parameters for fitting by minimize;
+    data is the data to be fitted; num is the # of fitting iterations.
     OUTPUT: best-fit parameters and a set of data based on them.
     """
 
@@ -187,7 +171,10 @@ def iterfit(residual, guess, x,y, width,height, data, num):
         params.add('z0', value = p[6], min = -2, max = 2)
 
         # Do the minimization; redefine the initial guess
-        fit_data, p = minimizer(residual, params, x,y, data)
+        out = minimize(residual, params, xtol = 1e-3, args = (x,y, data))
+        p = params2list(out.params)
+        param0 = list2params(p)
+        fit_data = 1 - gaussian(param0, x,y)
 
     print("Best fit: " + str(np.round(p,2)))
     return fit_data, p
