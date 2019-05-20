@@ -102,7 +102,7 @@ class LoggingEventHandler(FileSystemEventHandler):
     """
     Logs all filesystem events and counts the number of file creations.
     For our purposes only on_created and on_deleted are relevant.
-    
+
     def on_moved(self, event):
         global count
         super(LoggingEventHandler, self).on_moved(event)
@@ -120,7 +120,7 @@ class LoggingEventHandler(FileSystemEventHandler):
         super(LoggingEventHandler, self).on_created(event)
         what = 'directory' if event.is_directory else 'file'
         filename = event.src_path
-        
+
         despacito.append(filename)
         count += 1 # tick the counter for each new file
         print("Created " + filename + "; count = " + str(count))
@@ -148,7 +148,7 @@ class LoggingEventHandler(FileSystemEventHandler):
         # filename = event.src_path
         # count += 1
         # print("Modified " + filename + "; count = " + str(count))
-        
+
     def on_any_event(self, event):
         global count
         super(LoggingEventHandler, self).on_modified(event)
@@ -210,7 +210,7 @@ def params2list(parameters):
         values.append(entry[1])
     return values
 def list2params(value):
-    # Converts a list (val) to a Parameters object (params) 
+    # Converts a list (val) to a Parameters object (params)
 
     params = Parameters()
     params.add('A', value = value[0])
@@ -385,7 +385,7 @@ class roipoly:
                     self.previous_point =  self.start_point
                     self.allxpoints=[x]
                     self.allypoints=[y]
-                                                
+
                     ax.add_line(self.line)
                     self.fig.canvas.draw()
                     # add a segment
@@ -396,14 +396,14 @@ class roipoly:
                     self.previous_point = [x,y]
                     self.allxpoints.append(x)
                     self.allypoints.append(y)
-                                                                                
+
                     event.inaxes.add_line(self.line)
                     self.fig.canvas.draw()
             elif ((event.button == 1 and event.dblclick==True) or
                   (event.button == 3 and event.dblclick==False)) and self.line != None:
                 self.fig.canvas.mpl_disconnect(self.__ID1) #joerg
                 self.fig.canvas.mpl_disconnect(self.__ID2) #joerg
-                        
+
                 self.line.set_data([self.previous_point[0],
                                     self.start_point[0]],
                                    [self.previous_point[1],
@@ -411,7 +411,7 @@ class roipoly:
                 ax.add_line(self.line)
                 self.fig.canvas.draw()
                 self.line = None
-                        
+
                 if sys.flags.interactive:
                     pass
                 else:
@@ -588,7 +588,7 @@ def fit_1d(residual, guess, x, data):
     # Do the minimization; redefine the initial guess
     out = minimize(residual, params, args = (x, data))
     best = params2list(out.params)
-    
+
     # Convert best to a Parameters() object
     # This is shameful programming...
     param0 = Parameters()
@@ -655,20 +655,20 @@ while True:
     for meme in despacito:
         meme = meme[2:]
         despacito2.append(meme)
-    
-    # read images into large arrays of pixel values    
+
+    # read images into large arrays of pixel values
     print("Writing image data into arrays")
     data = imageio.imread(despacito2[0])
     beam = imageio.imread(despacito2[1])
     dark = imageio.imread(despacito2[2])
     width = len(data[0])
     height = len(data)
-    
+
     # save raw images in a new folder
     garbage_path = './Raw Data/'
     now = time.strftime("%Y%m%d-%H%M%S")
     pic_num = 1
-    
+
     for meme in despacito2:
         name = "Raw_%s_%s.bmp" % (now, str(pic_num))
         os.rename(meme, name)
@@ -703,7 +703,7 @@ while True:
 
     # create fake data for laser & atom sample; do background subtraction
     kernel = 2
-    noise = 1   
+    noise = 1
     # data, beam, dark = fake_data(laser, atoms, noise)
     transmission = subtraction(data, beam, dark, kernel)
     plt.figure(1)
@@ -723,13 +723,13 @@ while True:
     print("2: GAUSSIAN FITTING (2D IMAGE)")
     print("-------------------------------")
     start = time.clock()
-    
-    print("Mode: " + mode)    
+
+    print("Mode: " + mode)
 
     # compute parameters automatically
     if mode == 'automatic':
         (fx, fy) = (5, 5)
-        
+
         # coarsen the image; create a coarse meshgrid for plotting
         coarse = de_enhance(transmission, fx, fy)
         x_c = np.linspace(fx, len(coarse[0])*fx, len(coarse[0]))
@@ -747,7 +747,7 @@ while True:
         area = (width * height) / (fx * fy)
         int_error = (np.sum((error)**2) / area) * 1000
         print("Integrated error: " + str(round(int_error, 2)))
-        
+
     # guess parameters based on user input
     elif mode == 'manual':
         (fx, fy) = (2, 2)
@@ -766,21 +766,21 @@ while True:
         sigma_x = 0.5*(x_max - x_min)
         sigma_y = 0.5*(y_max - y_min)
         guess = [amp, x0, y0, sigma_x, sigma_y, 0, z0]
-        
+
         # create a new (coarse) meshgrid for plotting
         zoomed, dim_z = zoom_in(transmission, guess, 4)
         coarse = de_enhance(zoomed, fx, fy)
         x_c = np.linspace(fx, len(coarse[0])*fx, len(coarse[0]))
         y_c = np.linspace(fy, len(coarse) * fy, len(coarse))
         (x_c, y_c) = np.meshgrid(x_c, y_c)
-        
+
         # run the zoomed-in fit and compute its relative error
         fine_fit, best = iterfit(residual, guess, x_c, y_c, coarse, 1)
         error = (coarse - fine_fit) / coarse
         area = ((x_max - x_min) * (y_max - y_min)) / (fx * fy)
         int_error = (np.sum((error)**2) / area) * 1000
         print("Integrated error: " + str(round(int_error, 2)))
-    
+
     # generate final-fit transmission data; compute relative error
     params0 = list2params(best)
     fit_data = 1 - gaussian(params0, x,y)
@@ -833,7 +833,7 @@ while True:
     lam = 589.158e-9 # resonant wavelength
     sigma_0 = (3.0/(2.0*math.pi)) * (lam)**2 # cross-section
     area = (pixelsize * 1e-3)**2 # pixel area in SI units
-    
+
     density = -np.log(transmission)
     atom_num = (area/sigma_0) * np.sum(density)
     print("Atom number: " + str(np.round(atom_num/1e6, 2)) + " million")
@@ -878,7 +878,7 @@ while True:
     plt.imshow(final_error, cmap = 'inferno', extent = pixels)
     plt.colorbar()
     plt.show()
-    
+
     stop = time.clock()
     print("Plotting graphs took " + str(round(stop - start, 2)) + " seconds")
     print(" ")
@@ -893,7 +893,7 @@ while True:
     # - horizontal (4) and vertical (6) plots
     # - transmission plot, in color (7)
     # - empty boxes: 0, 2, 3, 5
-    
+
     print("6: SAVE AND DISPLAY FINAL PLOT")
     print("-------------------------------")
     start = time.clock()
@@ -902,7 +902,7 @@ while True:
     norm_min = -0.2
     norm_max = 0.9
     norm = plt.Normalize(norm_min, norm_max)
-    
+
     fig = plt.figure(1)
     wr = [0.5, 5, 0.5]
     hr = [0.001, 0.5, 4]

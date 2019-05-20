@@ -86,19 +86,19 @@ while True:
 
     print("1: READ FILES AND CREATE DATA")
     print("-------------------------------")
-    
+
     count = 0
     despacito2 = []
     path_to_watch = "."
     before = dict([(a, None) for a in os.listdir(path_to_watch)])
     print("Watching for new files...")
-    
+
     try: # main file monitoring loop - counts to 3
         while True:
             after = dict ([(a, None) for a in os.listdir (path_to_watch)])
             added = [a for a in after if not a in before]
             removed = [a for a in before if not a in after]
-            
+
             if added: # append filename to despacito2; move counter up
                 print "Added: ", ", ".join(added)
                 despacito2.extend(added)
@@ -114,25 +114,25 @@ while True:
                         count -= 1
                 else: # some other file was deleted: do nothing
                     pass
-            
+
             before = after
     except hp.MyExcept:
         start = time.clock()
     despacito2.sort() # make sure the images are in order
-    
-    # read images into large arrays of pixel values    
+
+    # read images into large arrays of pixel values
     print("Writing image data into arrays")
     data = imageio.imread(despacito2[0])
     beam = imageio.imread(despacito2[1])
     dark = imageio.imread(despacito2[2])
     width = len(data[0])
     height = len(data)
-    
+
     # save raw images in a new folder
     garbage_path = '../Raw Data/'
     now = time.strftime("%Y%m%d-%H%M%S")
     pic_num = 1
-    
+
     for meme in despacito2:
         name = "Raw_%s_%s.bmp" % (now, str(pic_num))
         os.rename(meme, name)
@@ -148,7 +148,7 @@ while True:
     pixels = [0, pixelsize * width, pixelsize * height, 0]
 
     # create fake data for laser & atom sample; do background subtraction
-    noise = 1   
+    noise = 1
     # data, beam, dark = fake_data(laser, atoms, noise)
     transmission = hp.subtraction(data, beam, dark, kernel)
 
@@ -172,7 +172,7 @@ while True:
     print("2: GAUSSIAN FITTING (2D IMAGE)")
     print("-------------------------------")
     start = time.clock()
-    
+
     print("Mode: " + mode)
     # gaussian parameters: p = [A, x0, y0, sigma_x, sigma_y, theta, z0]
 
@@ -195,28 +195,28 @@ while True:
         area = (width * height) / (f**2)
         int_error = (np.sum((error)**2) / area) * 1000
         print("Integrated error: " + str(round(int_error, 2)))
-        
+
     # guess parameters based on user input
     elif mode == 'manual':
         # allow the user to select a region of interest
         r = cv2.selectROI(transmission)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-        
+
         # zoom in, coarsen, and create a coarse meshgrid
         zoomed = hp.zoom_in(transmission, r)
         coarse = hp.de_enhance(zoomed, f)
         x_c = np.linspace(f, len(coarse[0])*f, len(coarse[0]))
         y_c = np.linspace(f, len(coarse) * f, len(coarse))
         (x_c, y_c) = np.meshgrid(x_c, y_c)
-        
+
         # take an intelligent guess at fit parameters
         (y0, x0, peak) = hp.peak_find(coarse, f)
         (amp, z0) = (transmission[0][0] - peak, 1 - transmission[0][0])
         sigma_x = 0.5*(r[2]/f)
         sigma_y = 0.5*(r[3]/f)
         guess = [amp, x0, y0, sigma_x, sigma_y, 0, z0]
-        
+
         # run the zoomed-in fit and compute its relative error
         fine_fit, best = hp.iterfit(hp.residual,guess,x_c,y_c,width,height,coarse,n)
         best[1] = best[1] + r[0]
@@ -225,7 +225,7 @@ while True:
         area = (r[2] * r[3]) / (f**2)
         int_error = (np.sum((error)**2) / area) * 1000
         print("Integrated error: " + str(round(int_error, 2)))
-    
+
     # generate final-fit transmission data; compute relative error
     params0 = hp.list2params(best)
     fit_data = 1 - hp.gaussian(params0, x,y)
@@ -283,7 +283,7 @@ while True:
     sigma_0 = ( 3.0 / (2.0 * math.pi) ) * (lam)**2 # cross-section
     sigma = sigma_0 / ( 1 + ( delta / ( Gamma / 2 ) )**2 ) # off resonance
     area = ( pixelsize * 1e-3 * mag )**2 # pixel area in SI units
-    
+
     density = -np.log(transmission)
     if mode == 'manual':
         density = -np.log(zoomed)
@@ -332,7 +332,7 @@ while True:
     plt.colorbar()
     plt.show()
     """
-    
+
     stop = time.clock()
     print("Plotting graphs took " + str(round(stop - start, 2)) + " seconds")
     print(" ")
@@ -346,14 +346,14 @@ while True:
     # - horizontal (1) and vertical (3) plots
     # - transmission plot, in color (4)
     # - empty boxes: 0, 2
-    
+
     print("6: SAVE AND DISPLAY FINAL PLOT")
     print("-------------------------------")
     start = time.clock()
 
     print("Painting Gaussian fits in oil")
     norm = plt.Normalize(norm_min, norm_max)
-    
+
     fig = plt.figure(1)
     wr = [0.9, 8, 1.1]
     hr = [1, 9]

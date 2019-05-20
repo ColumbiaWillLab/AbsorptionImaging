@@ -47,7 +47,7 @@ def params2list(parameters):
         values.append(entry[1])
     return values
 def list2params(value):
-    # Converts a list (val) to a Parameters object (params) 
+    # Converts a list (val) to a Parameters object (params)
 
     params = Parameters()
     params.add('A', value = value[0])
@@ -96,11 +96,11 @@ def de_enhance(data, f):
     return np.array(coarse)
 def zoom_in(data, r):
     """
-    INPUT: data is the large array, zoomed into user-defined ROI 
+    INPUT: data is the large array, zoomed into user-defined ROI
     given by r = (xmin, ymin, w, h).
     OUTPUT: smaller array zooming in on a Gaussian feature.
     """
-    
+
     # define bounds of zoomed array
     xmin = r[0]
     ymin = r[1]
@@ -275,7 +275,7 @@ def fit_1d(residual, guess, x, data):
     # Do the minimization; redefine the initial guess
     out = minimize(residual, params, xtol = 1e-3, args = (x, data))
     best = params2list(out.params)
-    
+
     # Convert best to a Parameters() object
     # This is shameful programming...
     param0 = Parameters()

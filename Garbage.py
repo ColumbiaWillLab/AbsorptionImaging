@@ -99,7 +99,7 @@ class roipoly:
                     self.previous_point =  self.start_point
                     self.allxpoints=[x]
                     self.allypoints=[y]
-                                                
+
                     ax.add_line(self.line)
                     self.fig.canvas.draw()
                     # add a segment
@@ -110,14 +110,14 @@ class roipoly:
                     self.previous_point = [x,y]
                     self.allxpoints.append(x)
                     self.allypoints.append(y)
-                                                                                
+
                     event.inaxes.add_line(self.line)
                     self.fig.canvas.draw()
             elif ((event.button == 1 and event.dblclick==True) or
                   (event.button == 3 and event.dblclick==False)) and self.line != None:
                 self.fig.canvas.mpl_disconnect(self.__ID1) #joerg
                 self.fig.canvas.mpl_disconnect(self.__ID2) #joerg
-                        
+
                 self.line.set_data([self.previous_point[0],
                                     self.start_point[0]],
                                    [self.previous_point[1],
@@ -125,7 +125,7 @@ class roipoly:
                 ax.add_line(self.line)
                 self.fig.canvas.draw()
                 self.line = None
-                        
+
                 if sys.flags.interactive:
                     pass
                 else:
@@ -323,7 +323,7 @@ class LoggingEventHandler(FileSystemEventHandler):
     """
     Logs all filesystem events and counts the number of file creations.
     For our purposes only on_created and on_deleted are relevant.
-    
+
     def on_moved(self, event):
         global count
         super(LoggingEventHandler, self).on_moved(event)
@@ -341,7 +341,7 @@ class LoggingEventHandler(FileSystemEventHandler):
         super(LoggingEventHandler, self).on_created(event)
         # what = 'directory' if event.is_directory else 'file'
         filename = event.src_path
-        
+
         despacito.append(filename)
         count += 1 # tick the counter for each new file
         print("Created " + filename + "; count = " + str(count))
@@ -369,7 +369,7 @@ class LoggingEventHandler(FileSystemEventHandler):
         # filename = event.src_path
         # count += 1
         # print("Modified " + filename + "; count = " + str(count))
-        
+
     def on_any_event(self, event):
         global count
         super(LoggingEventHandler, self).on_modified(event)
