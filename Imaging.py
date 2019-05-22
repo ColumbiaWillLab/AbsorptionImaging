@@ -271,8 +271,8 @@ while True:
         fit_v, param_v = hp.fit_1d(hp.residual_1d, guess_v, y_axis, vertical)
     except:
         print("Threw a 1D fit tantrum")
-        fit_h = 1 - hp.gaussian_1d(list2params(guess_h), x_axis)
-        fit_v = 1 - hp.gaussian_1d(list2params(guess_v), y_axis)
+        fit_h = 1 - hp.gaussian_1d(hp.list2params(guess_h), x_axis)
+        fit_v = 1 - hp.gaussian_1d(hp.list2params(guess_v), y_axis)
 
     stop = time.clock()
     print("1D fitting took " + str(round(stop - start, 2)) + " seconds")

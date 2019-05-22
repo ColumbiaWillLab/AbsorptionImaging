@@ -95,8 +95,8 @@ def de_enhance(data, f):
 
     print("De-enhancing by a factor of " + str(f))
     coarse = []
-    w = len(data[0]) / f
-    h = len(data) / f
+    w = len(data[0]) // f
+    h = len(data) // f
 
     # skip every f pixels and append to a smaller array
     for i in range(h):
