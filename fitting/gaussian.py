@@ -98,13 +98,8 @@ def one_D_gaussian(shot, best):
     guess_v = np.array([best[0], best[2], best[4], best[6]])
 
     # perform the horizontal and vertical 1D fits
-    try:
-        fit_h, param_h = hp.fit_1d(hp.residual_1d, guess_h, x_axis, horizontal)
-        fit_v, param_v = hp.fit_1d(hp.residual_1d, guess_v, y_axis, vertical)
-    except:
-        print("Threw a 1D fit tantrum")
-        fit_h = 1 - hp.gaussian_1d(hp.list2params(guess_h), x_axis)
-        fit_v = 1 - hp.gaussian_1d(hp.list2params(guess_v), y_axis)
+    fit_h, param_h = hp.fit_1d(hp.residual_1d, guess_h, x_axis, horizontal)
+    fit_v, param_v = hp.fit_1d(hp.residual_1d, guess_v, y_axis, vertical)
 
     return (
         fit_h,

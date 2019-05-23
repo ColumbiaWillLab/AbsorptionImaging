@@ -192,8 +192,8 @@ def collect_data(data, x_val, y_val, axis):
     """
 
     # approximate pixel locations of sampled points
-    x_pix = np.round(x_val).astype(int)
-    y_pix = np.round(y_val).astype(int)
+    x_pix = np.floor(x_val).astype(int)
+    y_pix = np.floor(y_val).astype(int)
     width = len(data[0])
     height = len(data)
 
