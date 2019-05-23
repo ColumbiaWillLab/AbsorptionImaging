@@ -55,11 +55,11 @@ shot = 0
 mode = "automatic"  # auto or manual
 kernel = 3  # for gaussian smoothing
 n = 1  # number of fit iterations
-mag = 2.5  # magnification
+mag = 3  # magnification
 
 pixelsize = 3.75e-3  # 3.75 um, reported in mm.
 lam = 589.158e-9  # resonant wavelength
-delta = 2 * math.pi * 8  # beam detuning in MHz
+delta = 2 * math.pi * 1  # beam detuning in MHz
 Gamma = 2 * math.pi * 9.7946  # D2 linewidth in MHz
 
 # de-enhanging factor
