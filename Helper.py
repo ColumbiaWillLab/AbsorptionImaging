@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import division
 
 import time
 
@@ -18,28 +19,6 @@ class MyExcept(Exception):
     """
     Raise this when 3 new files have been detected.
     """
-
-
-# Preliminary data processing
-def subtraction(data, beam, dark, kernel):
-    """
-    INPUT: 3 image arrays (background, laser beam, absorption image).
-    PROCESSING: subtract background from both data and beam arrays; divide
-    absorption data by beam background to get the transmission t^2.
-    Then apply a Gaussian kernel filter to smooth out remaining noise.
-    OUTPUT: numpy array containing transmission (0 < t^2 < 1) values.
-    """
-    print("Performing background subtraction")
-    background = beam.astype(int) - dark.astype(int)
-    image = data.astype(int) - dark.astype(int)
-    transmission = image.astype(float) / background.astype(float)
-    time.sleep(0.01)
-    transmission[background <= 7] = 1
-    time.sleep(0.01)
-
-    print("Applying Gaussian filter of size " + str(kernel))
-    transmission = filters.gaussian_filter(transmission, kernel)
-    return transmission
 
 
 # Auxiliary analysis functions
@@ -84,27 +63,6 @@ def peak_find(data, f):
     (y0, x0) = (x0_ind * f, y0_ind * f)
     print(x0, y0, val)
     return (x0, y0, val)
-
-
-def de_enhance(data, f):
-    """
-    INPUT: data contains the high-res image to be blockified;
-    f is the factor by which to reduce the resolution.
-    OUTPUT: a de-enhanced array containing the image data.
-    """
-
-    print("De-enhancing by a factor of " + str(f))
-    coarse = []
-    w = len(data[0]) // f
-    h = len(data) // f
-
-    # skip every f pixels and append to a smaller array
-    for i in range(h):
-        row = []
-        for j in range(w):
-            row.append(data[i * f][j * f])
-        coarse.append(row)
-    return np.array(coarse)
 
 
 def zoom_in(data, r):

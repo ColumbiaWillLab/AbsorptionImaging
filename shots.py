@@ -34,10 +34,12 @@ class Shot:
 
     @property
     def height(self):
+        """Pixel height of each BMP"""
         return self.shape[0]
 
     @property
     def width(self):
+        """Pixel width of each BMP"""
         return self.shape[1]
 
     @property
@@ -56,11 +58,12 @@ class Shot:
     @cachedproperty
     def transmission(self):
         """
-        INPUT: 3 image arrays (background, laser beam, absorption image).
-        PROCESSING: subtract background from both data and beam arrays; divide
-        absorption data by beam background to get the transmission t^2.
-        Then apply a Gaussian kernel filter to smooth out remaining noise.
-        OUTPUT: numpy array containing transmission (0 < t^2 < 1) values.
+        INPUT: 3 image arrays (background, laser beam, absorption image)
+        PROCESSING:
+        - subtract background from both data and beam arrays
+        - divide absorption data by beam background to get the transmission t^2
+         - apply a Gaussian kernel filter to smooth out remaining noise
+        OUTPUT: numpy array containing transmission (0 < t^2 < 1) values
         """
         print("Performing background subtraction")
         background = self.beam - self.dark
