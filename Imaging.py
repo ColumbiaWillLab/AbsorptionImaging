@@ -1,7 +1,6 @@
-### HOW TO RUN THIS PROGRAM ###
-"""
+""" Shot Image Analysis Instructions
 STEP 0. Make sure that mode == 'automatic' down below.
-STEP 1. Run the script using \Imaging Code>python Imaging.py.
+STEP 1. Run the script using Imaging Code>python Imaging.py.
 A large white display labeled Figure 1 should pop up on the left monitor.
 STEP 2. Run a single iteration in Cicero; the display should turn black.
 After a few seconds the window will read "(Not Responding)" when clicked.
@@ -19,36 +18,21 @@ Raw data and each live-updated image are saved in their respective folders.
 """
 from __future__ import print_function
 
-##################################################
-######## 0: CLASSES, FUNCTIONS, LIBRARIES ########
-##################################################
-
-print("0: SET UP LIBRARIES/FUNCTIONS")
-print("------------------------------")
-
 import time
-
-start = time.clock()
-
 import os
-import shutil
-import imageio
-import cv2
-
 import math
+
+import cv2
 import numpy as np
 
-np.set_printoptions(suppress=True)  # suppress scientific notation
-
-from scipy.optimize import curve_fit
-from lmfit import minimize, Parameters
-
 import matplotlib.pyplot as plt
-import matplotlib.path as mplPath
 import matplotlib.gridspec as gridspec
 
-# all function definitions and classes
 import Helper as hp
+import shots
+
+np.set_printoptions(suppress=True)  # suppress scientific notation
+start = time.clock()
 
 # helpful variables to play with
 shot = 0
@@ -123,46 +107,18 @@ while True:
         start = time.clock()
     despacito2.sort()  # make sure the images are in order
 
-    # read images into large arrays of pixel values
-    print("Writing image data into arrays")
-    data = imageio.imread(despacito2[0])
-    beam = imageio.imread(despacito2[1])
-    dark = imageio.imread(despacito2[2])
-    width = len(data[0])
-    height = len(data)
+    shot = shots.Shot(despacito2)
+    width, height = shot.width, shot.height
+    x, y = shot.meshgrid
+    pixels = shot.pixels
+    transmission = shot.transmission
 
-    # save raw images in a new folder
-    garbage_path = "../Raw Data/"
-    now = time.strftime("%Y%m%d-%H%M%S")
-    pic_num = 1
-
-    for meme in despacito2:
-        name = "Raw_%s_%s.bmp" % (now, str(pic_num))
-        os.rename(meme, name)
-        shutil.copy2(name, garbage_path)
-        pic_num += 1
-        os.remove(name)
-
-    # create a meshgrid: each pixel is (3.75 um) x (3.75 um); images
-    # have resolution (964 p) x (1292 p) --> (3.615 mm) x (4.845 mm).
-    x = np.linspace(0, width, width)
-    y = np.linspace(0, height, height)
-    (x, y) = np.meshgrid(x, y)
-    pixels = [0, pixelsize * width, pixelsize * height, 0]
-
-    # create fake data for laser & atom sample; do background subtraction
-    noise = 1
-    # data, beam, dark = fake_data(laser, atoms, noise)
-    transmission = hp.subtraction(data, beam, dark, kernel)
-
-    """
-    # show transmission plot - debugging purposes only
-    plt.close()
-    plt.figure(1)
-    plt.imshow(transmission, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.draw() # display now; keep computing
-    """
+    # # show transmission plot - debugging purposes only
+    # plt.close()
+    # plt.figure(1)
+    # plt.imshow(transmission, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.draw() # display now; keep computing
 
     stop = time.clock()
     print("Writing data took " + str(round(stop - start, 2)) + " seconds")
@@ -309,36 +265,32 @@ while True:
     print("-------------------------------")
     start = time.clock()
 
-    # preliminary plots: 3 images and transmission
-    """
-    plt.figure(1)
-    plt.imshow(data, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.figure(2)
-    plt.imshow(beam, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.figure(3)
-    plt.imshow(dark, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.figure(4)
-    plt.imshow(data - dark, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.figure(5)
-    plt.imshow(beam - dark, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.figure(6)
-    plt.imshow(transmission, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.show()
-    """
+    # # preliminary plots: 3 images and transmission
+    # plt.figure(1)
+    # plt.imshow(data, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.figure(2)
+    # plt.imshow(beam, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.figure(3)
+    # plt.imshow(dark, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.figure(4)
+    # plt.imshow(data - dark, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.figure(5)
+    # plt.imshow(beam - dark, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.figure(6)
+    # plt.imshow(transmission, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.show()
 
-    # coarse and fine fits, and relative errors
-    """
-    plt.figure(1)
-    plt.imshow(final_error, cmap = c, extent = pixels)
-    plt.colorbar()
-    plt.show()
-    """
+    # # coarse and fine fits, and relative errors
+    # plt.figure(1)
+    # plt.imshow(final_error, cmap = c, extent = pixels)
+    # plt.colorbar()
+    # plt.show()
 
     stop = time.clock()
     print("Plotting graphs took " + str(round(stop - start, 2)) + " seconds")

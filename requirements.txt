@@ -3,6 +3,7 @@ asteval==0.9.13
 astroid==2.2.5
 attrs==19.1.0
 black==19.3b0
+boltons==19.1.0
 Click==7.0
 cycler==0.10.0
 imageio==2.5.0
