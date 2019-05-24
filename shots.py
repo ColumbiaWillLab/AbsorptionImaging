@@ -58,7 +58,7 @@ class Shot:
     @cachedproperty
     def transmission(self):
         """
-        INPUT: 3 image arrays (background, laser beam, absorption image)
+        INPUT: 3 image arrays (atoms, beam, dark-field)
         PROCESSING:
         - subtract background from both data and beam arrays
         - divide absorption data by beam background to get the transmission t^2
@@ -66,10 +66,15 @@ class Shot:
         OUTPUT: numpy array containing transmission (0 < t^2 < 1) values
         """
         print("Performing background subtraction")
-        background = self.beam - self.dark
-        image = self.data - self.dark
-        transmission = image / background
-        transmission[background <= 7] = 1
+        atoms = np.subtract(self.data, self.dark)
+        light = np.subtract(self.beam, self.dark)
+
+        # If the light data is below some threshold, we assume that any
+        # atom data at this location is invalid and treat as if no transmission.
+        # The threshold value was selected experimentally
+        threshold = 7
+        transmission = np.divide(atoms, light, where=light > threshold)
+        transmission[light <= threshold] = 1
 
         print("Applying Gaussian filter of size ", Shot.kernel)
         transmission = filters.gaussian_filter(transmission, Shot.kernel)

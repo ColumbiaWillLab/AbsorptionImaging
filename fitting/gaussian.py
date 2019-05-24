@@ -45,7 +45,7 @@ def two_D_gaussian(mode, f, shot, n):
         cv2.destroyAllWindows()
 
         # zoom in, coarsen, and create a coarse meshgrid
-        zoomed = hp.zoom_in(transmission, r)
+        zoomed = np.array(hp.zoom_in(transmission, r))
         coarse = zoomed[::f, ::f]
         x_c = np.linspace(f, len(coarse[0]) * f, len(coarse[0]))
         y_c = np.linspace(f, len(coarse) * f, len(coarse))

@@ -1,18 +1,10 @@
 from __future__ import print_function
 from __future__ import division
 
-import time
-
 import math
 import numpy as np
 
-from scipy.optimize import curve_fit
-from scipy.ndimage import filters
 from lmfit import minimize, Parameters
-
-import matplotlib.pyplot as plt
-import matplotlib.path as mplPath
-import matplotlib.gridspec as gridspec
 
 
 class MyExcept(Exception):
