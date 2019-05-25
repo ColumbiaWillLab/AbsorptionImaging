@@ -83,6 +83,7 @@ class Shot:
     def __init__(self, bmp_paths):
         print("Reading image data into arrays")
         bmps = map(imageio.imread, bmp_paths)
+        bmps = map(lambda x: x.astype("int16"), bmps)  # prevent underflow
         (self.data, self.beam, self.dark) = bmps
         self.shape = self.data.shape
 
