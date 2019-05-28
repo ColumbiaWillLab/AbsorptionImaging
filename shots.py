@@ -2,28 +2,11 @@
 from __future__ import print_function
 from __future__ import division
 
-import os
-import time
-import shutil
 import imageio
 import numpy as np
 
 from boltons.cacheutils import cachedproperty
 from scipy.ndimage import filters
-
-
-def _move_raw_images(bmp_paths):
-    """Move (and delete) processed bmp to "Raw Data" folder"""
-    garbage_path = "../Raw Data/"
-    now = time.strftime("%Y%m%d-%H%M%S")
-    pic_num = 1
-
-    for path in bmp_paths:
-        name = "Raw_%s_%s.bmp" % (now, str(pic_num))
-        os.rename(path, name)
-        shutil.copy2(name, garbage_path)
-        pic_num += 1
-        os.remove(name)
 
 
 class Shot:
@@ -86,5 +69,3 @@ class Shot:
         bmps = map(lambda x: x.astype("int16"), bmps)  # prevent underflow
         (self.data, self.beam, self.dark) = bmps
         self.shape = self.data.shape
-
-        _move_raw_images(bmp_paths)
