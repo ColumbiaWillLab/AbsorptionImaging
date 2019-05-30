@@ -2,6 +2,8 @@
 from __future__ import print_function
 from __future__ import division
 
+import logging
+
 import imageio
 import numpy as np
 
@@ -9,7 +11,7 @@ from boltons.cacheutils import cachedproperty
 from scipy.ndimage import filters
 
 
-class Shot:
+class Shot(object):
     """A single shot (3 bmp) sequence"""
 
     kernel = 3  # for gaussian smoothing
@@ -48,7 +50,7 @@ class Shot:
          - apply a Gaussian kernel filter to smooth out remaining noise
         OUTPUT: numpy array containing transmission (0 < t^2 < 1) values
         """
-        print("Performing background subtraction")
+        logging.info("Performing background subtraction")
         atoms = np.subtract(self.data, self.dark)
         light = np.subtract(self.beam, self.dark)
 
@@ -59,12 +61,12 @@ class Shot:
         transmission = np.divide(atoms, light, where=light > threshold)
         transmission[light <= threshold] = 1
 
-        print("Applying Gaussian filter of size ", Shot.kernel)
+        logging.info("Applying Gaussian filter of size %i", Shot.kernel)
         transmission = filters.gaussian_filter(transmission, Shot.kernel)
         return transmission
 
     def __init__(self, bmp_paths):
-        print("Reading image data into arrays")
+        logging.info("Reading image data into arrays")
         bmps = map(imageio.imread, bmp_paths)
         bmps = map(lambda x: x.astype("int16"), bmps)  # prevent underflow
         (self.data, self.beam, self.dark) = bmps
