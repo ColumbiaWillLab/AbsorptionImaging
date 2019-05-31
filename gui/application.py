@@ -4,8 +4,8 @@ import tkinter as tk
 
 from tkinter import ttk
 
-from gui.logging import LogTextBox, queue_handler
-from gui.plotting import MplFigure, figure_queue
+from gui.logs import LogTextBox, queue_handler
+from gui.plots import MplFigure, FitParams, plot_queue
 
 
 class Application(ttk.Frame):
@@ -16,16 +16,31 @@ class Application(ttk.Frame):
         self.master.title("Absorption Imager")
         self.pack(fill=tk.BOTH, expand=True)
 
-        image_frame = ttk.LabelFrame(self, text="Image")
-        image_frame.grid(row=1, column=2)
-        self.figure = MplFigure(image_frame, figure_queue)
+        self.fit_params = FitParams(self)
+        self.fit_params.grid(row=0, column=0)
 
-        console_frame = ttk.Labelframe(self, text="Console")
-        console_frame.grid(row=2, column=2)
+        image_frame = ttk.LabelFrame(self)
+        image_frame.grid(row=0, column=1)
+        self.figure = MplFigure(image_frame)
+
+        console_frame = ttk.Labelframe(self, text="Log", relief="sunken")
+        console_frame.grid(row=1, column=0)
         self.console = LogTextBox(console_frame, queue_handler.log_queue)
 
         self.master.protocol("WM_DELETE_WINDOW", self.quit)
         signal.signal(signal.SIGINT, self.quit)
+
+        self.after(100, self.poll_plot_queue)
+
+    def display(self, plot):
+        self.fit_params.display(plot[0])
+        self.figure.display()
+
+    def poll_plot_queue(self):
+        while not plot_queue.empty():
+            plot = plot_queue.get(block=False)
+            self.display(plot)
+        self.after(100, self.poll_plot_queue)
 
     def quit(self, *args):
         """Shut down Tkinter master and stop/join all threads"""

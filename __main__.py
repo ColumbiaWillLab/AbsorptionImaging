@@ -4,7 +4,7 @@ import os
 
 from watcher.observer import start_observer
 from gui.application import start
-from gui.logging import queue_handler
+from gui.logs import queue_handler
 
 if __name__ == "__main__":
     logging.basicConfig(

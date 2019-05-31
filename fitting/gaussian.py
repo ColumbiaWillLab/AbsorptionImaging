@@ -1,5 +1,5 @@
 """Gaussian fitting"""
-
+import logging
 import cv2
 import numpy as np
 
@@ -8,7 +8,7 @@ from .utils import gaussian
 
 
 def two_D_gaussian(mode, f, shot, n):
-    print("Mode:", mode)
+    logging.info("Mode: %s", mode)
 
     transmission = shot.transmission
     width = shot.width
@@ -35,7 +35,7 @@ def two_D_gaussian(mode, f, shot, n):
         error = (coarse - coarse_fit) / coarse
         area = (width * height) / (f ** 2)
         int_error = (np.sum((error) ** 2) / area) * 1000
-        print("Integrated error: " + str(round(int_error, 2)))
+        logging.info("Integrated error: %.2f", int_error)
 
     # guess parameters based on user input
     elif mode == "manual":
@@ -67,7 +67,7 @@ def two_D_gaussian(mode, f, shot, n):
         error = (coarse - fine_fit) / coarse
         area = (r[2] * r[3]) / (f ** 2)
         int_error = (np.sum((error) ** 2) / area) * 1000
-        print("Integrated error: " + str(round(int_error, 2)))
+        logging.info("Integrated error: %.2f", int_error)
 
     # generate final-fit transmission data; compute relative error
 
@@ -88,7 +88,7 @@ def one_D_gaussian(shot, best):
     (x_hor, y_hor, x_ver, y_ver) = hp.lines(x_val, best)
 
     # collect (Gaussian) data along these axes
-    print("Collecting 1D data")
+    logging.info("Collecting 1D data")
     (x_axis, horizontal) = hp.collect_data(transmission, x_hor, y_hor, "x")
     (y_axis, vertical) = hp.collect_data(transmission, x_ver, y_ver, "y")
 

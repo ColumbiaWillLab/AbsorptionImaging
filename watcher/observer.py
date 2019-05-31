@@ -12,7 +12,7 @@ import plotting
 
 from .utils import create_handler, move_raw_images
 
-from gui.plotting import figure, figure_queue
+from gui.plots import figure, plot_queue
 
 
 def _check_and_dispatch(bmp_paths):
@@ -57,8 +57,8 @@ def _process_shot(name, paths):
     atom_num = density.atom_number(shot)
     logging.info("Atom number: %.2e", atom_num)
 
-    plotting.plot(figure, shot)
-    figure_queue.put(1)
+    plotting.plot(figure, shot, best, atom_num)
+    plot_queue.put((best, True))
 
     move_raw_images(paths)
 
