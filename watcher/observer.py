@@ -8,8 +8,11 @@ from watchdog.observers import Observer
 import shots
 import fitting
 import density
+import plotting
 
 from .utils import create_handler, move_raw_images
+
+from gui.plotting import figure, figure_queue
 
 
 def _check_and_dispatch(bmp_paths):
@@ -53,6 +56,9 @@ def _process_shot(name, paths):
     logging.info("-------------------------------")
     atom_num = density.atom_number(shot)
     logging.info("Atom number: %.2e", atom_num)
+
+    plotting.plot(figure, shot)
+    figure_queue.put(1)
 
     move_raw_images(paths)
 
