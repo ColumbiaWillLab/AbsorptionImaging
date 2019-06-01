@@ -10,21 +10,23 @@ from gui.plots import MplFigure, FitParams, plot_queue
 
 class Application(ttk.Frame):
     def __init__(self, master, threads=[]):
+        pad = 5
+
         super().__init__(master)
         self.threads = threads
         self.master = master
         self.master.title("Absorption Imager")
-        self.pack(fill=tk.BOTH, expand=True)
+        self.pack(fill="both", expand=True)
 
         self.fit_params = FitParams(self)
         self.fit_params.grid(row=0, column=0)
 
         image_frame = ttk.LabelFrame(self)
-        image_frame.grid(row=0, column=1)
+        image_frame.grid(row=0, column=1, rowspan=2, padx=pad, pady=pad, sticky="NSEW")
         self.figure = MplFigure(image_frame)
 
         console_frame = ttk.Labelframe(self, text="Log", relief="sunken")
-        console_frame.grid(row=1, column=0)
+        console_frame.grid(row=1, column=0, padx=pad, pady=pad, sticky="NSEW")
         self.console = LogTextBox(console_frame, queue_handler.log_queue)
 
         self.master.protocol("WM_DELETE_WINDOW", self.quit)
@@ -54,9 +56,16 @@ class Application(ttk.Frame):
         self.master.destroy()
 
 
+def mainloop(app):
+    try:
+        app.mainloop()
+    except UnicodeDecodeError:
+        mainloop(app)
+
+
 def start(threads=[]):
     root = tk.Tk()
     root.state("zoomed")
 
     app = Application(root, threads)
-    app.mainloop()
+    mainloop(app)

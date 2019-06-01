@@ -29,7 +29,7 @@ class LogTextBox(object):
         st.tag_config("WARNING", foreground="orange")
         st.tag_config("ERROR", foreground="red")
         st.tag_config("CRITICAL", foreground="red", underline=1)
-        st.pack(fill=tk.BOTH, expand=True, ipadx=10, ipady=10)
+        st.pack(fill="both", expand=True)
 
         self.st = st
         master.after(100, self.poll_log_queue)
@@ -37,9 +37,9 @@ class LogTextBox(object):
     def display(self, msg, levelname):
         st = self.st
         st.configure(state="normal")
-        st.insert(tk.END, msg + "\n", levelname)
+        st.insert("end", msg + "\n", levelname)
         st.configure(state="disabled")
-        st.yview(tk.END)
+        st.yview("end")
 
     def poll_log_queue(self):
         while not self.log_queue.empty():
