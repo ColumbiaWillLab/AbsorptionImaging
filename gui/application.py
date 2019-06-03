@@ -2,6 +2,7 @@ import signal
 import time
 import tkinter as tk
 
+from tkinter import font
 from tkinter import ttk
 
 from gui.logs import LogTextBox, queue_handler
@@ -81,6 +82,9 @@ def start(threads=[]):
     root.state("zoomed")
 
     app = Application(root, threads)
+
+    default_font = font.nametofont("TkTextFont")
+    default_font.configure(size=18)
 
     menubar = tk.Menu(root)
     filemenu = tk.Menu(menubar, tearoff=0)
