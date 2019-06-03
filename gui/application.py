@@ -77,7 +77,7 @@ def mainloop(app):
         mainloop(app)
 
 
-def start(threads=[]):
+def start(threads):
     root = tk.Tk()
     root.state("zoomed")
 

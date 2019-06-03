@@ -9,6 +9,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 from config import config
 
+from .components import FloatEntry
+
 figure = Figure(figsize=(8, 5), dpi=100)
 plot_queue = queue.Queue()
 
@@ -41,7 +43,7 @@ class FitParams(ttk.Frame):
             for key in config[section].keys():
                 text = key.replace("_", " ").capitalize()
                 ttk.Label(self, text=text).grid(row=p_idx, column=0)
-                entry = ttk.Entry(self, state="normal")
+                entry = FloatEntry(self, state="normal")
                 entry.grid(row=p_idx, column=1)
                 entry.insert(0, config[section].getfloat(key))
                 p_idx += 1
@@ -64,7 +66,7 @@ class FitParams(ttk.Frame):
             entry = self.entries[i]
             entry.configure(state="normal")
             entry.delete(0, "end")
-            entry.insert(0, p)
+            entry.insert(0, "{:.4g}".format(p))
             entry.configure(state="readonly")
 
 
