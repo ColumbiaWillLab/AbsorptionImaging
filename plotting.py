@@ -77,7 +77,7 @@ def plot(
     # # transmission plot with axis lines and zoom box
     ax4 = fig.add_subplot(gs[4])
     ax4.imshow(
-        1 - shot.transmission, cmap="gray", norm=color_norm
+        shot.transmission, cmap="gray", norm=color_norm
     )  # , cmap=c, norm=norm, extent=pixels)
     ax4.plot(pixelsize * x_hor, pixelsize * y_hor, color="g", linewidth=0.5)
     ax4.plot(pixelsize * x_ver, pixelsize * y_ver, color="g", linewidth=0.5)

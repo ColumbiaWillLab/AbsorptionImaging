@@ -9,11 +9,11 @@ from gui.plots import MplFigure, FitParams, TemperatureParams, plot_queue
 
 
 class Application(ttk.Frame):
-    def __init__(self, master, threads=[]):
+    def __init__(self, master, threads=None):
         pad = 5
 
         super().__init__(master)
-        self.threads = threads
+        self.threads = threads or []
         self.master = master
         self.master.title("Absorption Imager")
         self.pack(fill="both", expand=True)
