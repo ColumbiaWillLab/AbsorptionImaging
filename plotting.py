@@ -3,12 +3,25 @@ import matplotlib.colors as colors
 import matplotlib.gridspec as gridspec
 
 
-def plot(fig, shot, best, atom_num):
+def plot(
+    fig,
+    shot,
+    best,
+    atom_num,
+    x_axis,
+    y_axis,
+    fit_h,
+    fit_v,
+    horizontal,
+    vertical,
+    x_hor,
+    y_hor,
+    x_ver,
+    y_ver,
+):
     pixelsize = 3.75e-3  # 3.75 um, reported in mm.
-    # fig.add_subplot(111).imshow(shot.transmission)
     color_norm = colors.Normalize(-0.1, 1.0)
 
-    # fig = plt.figure(1)
     wr = [0.9, 8, 1.1]
     hr = [1, 9]
     gs = gridspec.GridSpec(2, 3, width_ratios=wr, height_ratios=hr)
@@ -46,17 +59,17 @@ def plot(fig, shot, best, atom_num):
 
     # # horizontal and vertical 1D fits
 
-    # ax1 = fig.add_subplot(gs[1])
-    # ax1.plot(x_axis, 1 - horizontal, "ko", markersize=2)
-    # ax1.plot(x_axis, 1 - fit_h, "r", linewidth=1)
+    ax1 = fig.add_subplot(gs[1])
+    ax1.plot(x_axis, 1 - horizontal, "ko", markersize=2)
+    ax1.plot(x_axis, 1 - fit_h, "r", linewidth=1)
     # ax1.xlim(0, width)
     # ax1.ylim(norm_min, norm_max)
     # ax1.gca().axes.get_xaxis().set_visible(False)
 
-    # ax3 = fig.aax3subplot(gs[3])
-    # ax3.plot(1 - vertical, y_axis, "ko", markersize=2)
-    # ax3.plot(1 - fit_v, y_axis, "r", linewidth=1)
-    # ax3.plot()
+    ax3 = fig.add_subplot(gs[3])
+    ax3.plot(1 - vertical, y_axis, "ko", markersize=2)
+    ax3.plot(1 - fit_v, y_axis, "r", linewidth=1)
+    ax3.plot()
     # ax3.xlim(norm_max, norm_min)
     # ax3.ylim(0, height)
     # ax3.gca().axes.get_yaxis().set_visible(False)
@@ -66,8 +79,8 @@ def plot(fig, shot, best, atom_num):
     ax4.imshow(
         1 - shot.transmission, cmap="gray", norm=color_norm
     )  # , cmap=c, norm=norm, extent=pixels)
-    # ax4.plot(pixelsize * x_hor, pixelsize * y_hor, color="g", linewidth=0.5)
-    # ax4.plot(pixelsize * x_ver, pixelsize * y_ver, color="g", linewidth=0.5)
+    ax4.plot(pixelsize * x_hor, pixelsize * y_hor, color="g", linewidth=0.5)
+    ax4.plot(pixelsize * x_ver, pixelsize * y_ver, color="g", linewidth=0.5)
 
     # plt.xlim(pixels[0], pixels[1])
     # plt.ylim(pixels[3], pixels[2])  # y-axis is upside down!

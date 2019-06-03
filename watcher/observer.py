@@ -57,7 +57,22 @@ def _process_shot(name, paths):
     atom_num = density.atom_number(shot)
     logging.info("Atom number: %.2e", atom_num)
 
-    plotting.plot(figure, shot, best, atom_num)
+    plotting.plot(
+        figure,
+        shot,
+        best,
+        atom_num,
+        x_axis,
+        y_axis,
+        fit_h,
+        fit_v,
+        horizontal,
+        vertical,
+        x_hor,
+        y_hor,
+        x_ver,
+        y_ver,
+    )
     plot_queue.put((best, True))
 
     move_raw_images(paths)
