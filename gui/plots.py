@@ -36,25 +36,27 @@ class FitParams(ttk.Frame):
         super().__init__(master)
         self.master = master
 
-        idx = 0
+        p_idx = 0
         for section in config.sections():
             for key in config[section].keys():
                 text = key.replace("_", " ").capitalize()
-                ttk.Label(self, text=text).grid(row=idx, column=0)
+                ttk.Label(self, text=text).grid(row=p_idx, column=0)
                 entry = ttk.Entry(self, state="normal")
-                entry.grid(row=idx, column=1)
+                entry.grid(row=p_idx, column=1)
                 entry.insert(0, config[section].getfloat(key))
-                entry.configure(state="readonly")
-                idx += 1
+                p_idx += 1
 
-        labels = ["A", "x_0", "y_0", "σ_x", "σ_y", "θ", "N"]
-        for idx, lbl in enumerate(labels):
-            ttk.Label(self, text=lbl).grid(row=idx, column=2)
+        save = ttk.Button(self, text="Save")
+        save.grid(row=p_idx, column=1)
+
+        labels = ["A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
+        for l_idx, lbl in enumerate(labels):
+            ttk.Label(self, text=lbl).grid(row=l_idx, column=2)
 
         self.entries = []
-        for i in range(7):
+        for f_idx in range(7):
             entry = ttk.Entry(self, state="readonly")
-            entry.grid(row=i, column=3)
+            entry.grid(row=f_idx, column=3)
             self.entries.append(entry)
 
     def display(self, fit_params):
@@ -64,3 +66,9 @@ class FitParams(ttk.Frame):
             entry.delete(0, "end")
             entry.insert(0, p)
             entry.configure(state="readonly")
+
+
+class TemperatureParams(ttk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.master = master

@@ -1,11 +1,12 @@
 import numpy as np
+import matplotlib.colors as colors
 import matplotlib.gridspec as gridspec
 
 
 def plot(fig, shot, best, atom_num):
     pixelsize = 3.75e-3  # 3.75 um, reported in mm.
     # fig.add_subplot(111).imshow(shot.transmission)
-    # norm = plt.Normalize(norm_min, norm_max)
+    color_norm = colors.Normalize(-0.1, 1.0)
 
     # fig = plt.figure(1)
     wr = [0.9, 8, 1.1]
@@ -62,7 +63,9 @@ def plot(fig, shot, best, atom_num):
 
     # # transmission plot with axis lines and zoom box
     ax4 = fig.add_subplot(gs[4])
-    ax4.imshow(1 - shot.transmission)  # , cmap=c, norm=norm, extent=pixels)
+    ax4.imshow(
+        1 - shot.transmission, cmap="gray", norm=color_norm
+    )  # , cmap=c, norm=norm, extent=pixels)
     # ax4.plot(pixelsize * x_hor, pixelsize * y_hor, color="g", linewidth=0.5)
     # ax4.plot(pixelsize * x_ver, pixelsize * y_ver, color="g", linewidth=0.5)
 
