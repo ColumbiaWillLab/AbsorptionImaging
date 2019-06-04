@@ -19,6 +19,7 @@ def plot(
     x_ver,
     y_ver,
 ):
+    fig.clf()
     pixelsize = 3.75e-3  # 3.75 um, reported in mm.
     color_norm = colors.Normalize(-0.1, 1.0)
 
