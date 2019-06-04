@@ -1,7 +1,11 @@
 import queue
 
+from math import isfinite
+
 import tkinter as tk
 import tkinter.ttk as ttk
+import tkinter.scrolledtext as tkst
+
 import numpy as np
 
 from matplotlib.figure import Figure
@@ -74,3 +78,22 @@ class TemperatureParams(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
+
+        ttk.Label(self, text="Times of Flight:").pack()
+
+        st = tkst.ScrolledText(self, state="normal", height=12, width=10)
+        st.pack()
+
+        btn = ttk.Button(self, text="Run", command=self.run)
+        btn.pack()
+
+        self.st = st
+        self.btn = btn
+
+    def run(self):
+        try:
+            vals = [float(x) for x in self.st.get("1.0", "end-1c").split()]
+            if not all(x >= 0 and isfinite(x) for x in vals):
+                raise ValueError
+        except ValueError:
+            tk.messagebox.showinfo("Temperature Fitting Alert", "Invalid Entry!")

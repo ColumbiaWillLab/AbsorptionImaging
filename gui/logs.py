@@ -34,6 +34,7 @@ class LogTextBox(object):
         st.pack(fill="both", expand=True)
 
         self.st = st
+
         master.after(100, self.poll_log_queue)
 
     def display(self, msg, levelname):
