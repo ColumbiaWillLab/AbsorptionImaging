@@ -41,6 +41,8 @@ class FitParams(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
+        self.fit_params = []
+        self.config_params = {}
 
         p_idx = 0
         for section in config.sections():
@@ -50,28 +52,35 @@ class FitParams(ttk.Frame):
                 entry = FloatEntry(self, state="normal")
                 entry.grid(row=p_idx, column=1)
                 entry.insert(0, config[section].getfloat(key))
+                self.config_params[f"{section}.{key}"] = entry
                 p_idx += 1
 
-        save = ttk.Button(self, text="Save")
+        save = ttk.Button(self, text="Save", command=self.save_config)
         save.grid(row=p_idx, column=1)
 
         labels = ["A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
         for l_idx, lbl in enumerate(labels):
             ttk.Label(self, text=lbl).grid(row=l_idx, column=2)
 
-        self.entries = []
         for f_idx in range(7):
             entry = ttk.Entry(self, state="readonly")
             entry.grid(row=f_idx, column=3)
-            self.entries.append(entry)
+            self.fit_params.append(entry)
 
     def display(self, fit_params):
         for i, p in enumerate(fit_params[0:7]):
-            entry = self.entries[i]
+            entry = self.fit_params[i]
             entry.configure(state="normal")
             entry.delete(0, "end")
             entry.insert(0, "{:.4g}".format(p))
             entry.configure(state="readonly")
+
+    def save_config(self):
+        for name, entry in self.config_params.items():
+            section, key = name.split(".")
+            config[section][key] = str(entry.get())
+
+        config.save()
 
 
 class TemperatureParams(ttk.Frame):
@@ -96,4 +105,4 @@ class TemperatureParams(ttk.Frame):
             if not all(x >= 0 and isfinite(x) for x in vals):
                 raise ValueError
         except ValueError:
-            tk.messagebox.showinfo("Temperature Fitting Alert", "Invalid Entry!")
+            tk.messagebox.showerror("Temperature Fitting Alert", "Invalid Entry!")
