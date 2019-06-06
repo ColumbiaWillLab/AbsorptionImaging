@@ -15,11 +15,11 @@ def ravel(func):
 def gaussian_2D(x, y, A, x0, y0, sx, sy, theta=0, z0=0):
     """Takes a meshgrid of x, y and returns the gaussian computed across all values.
     See https://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function for more info"""
-    cos_sq = np.power(np.cos(theta), 2)
-    sin_sq = np.power(np.sin(theta), 2)
+    cos_sq = np.square(np.cos(theta))
+    sin_sq = np.square(np.sin(theta))
     sin2th = np.sin(2 * theta)
-    sx_sq = np.power(sx, 2)
-    sy_sq = np.power(sy, 2)
+    sx_sq = np.square(sx)
+    sy_sq = np.square(sy)
 
     # General 2D Gaussian equation parameters
     a = cos_sq / (2 * sx_sq) + sin_sq / (2 * sy_sq)
@@ -27,6 +27,6 @@ def gaussian_2D(x, y, A, x0, y0, sx, sy, theta=0, z0=0):
     c = sin_sq / (2 * sx_sq) + cos_sq / (2 * sy_sq)
 
     quadratic = (
-        a * np.power(x - x0, 2) + 2 * b * (x - x0) * (y - y0) + c * np.power(y - y0, 2)
+        a * np.square(x - x0) + 2 * b * (x - x0) * (y - y0) + c * np.square(y - y0)
     )
     return A * np.exp(-quadratic) + z0

@@ -11,8 +11,11 @@ from boltons.cacheutils import cachedproperty
 from scipy.ndimage import filters
 from lmfit import Model
 from lmfit.models import GaussianModel, ConstantModel
+from scipy.stats.distributions import chi2
 
 from fitting.utils import ravel, gaussian_2D
+
+from config import config
 
 
 class Shot(object):
@@ -115,6 +118,7 @@ class Shot(object):
             sy=100,
             theta=0,
             z0=0,
+            # scale_covar=False,
             fit_kws={"maxfev": 200},
         )
         logging.info(result.fit_report())
@@ -130,6 +134,19 @@ class Shot(object):
 
         contour_levels = self.twoD_gaussian.eval(x=x, y=y).reshape((3, 3))
         return np.diag(contour_levels)
+
+    @cachedproperty
+    def two_sigma_mask(self):
+        # TODO: assumes independence, needs covar matrix
+        bp_2D = self.twoD_gaussian.best_values
+        x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
+        y, x = np.ogrid[-y0 : self.height - y0, -x0 : self.width - x0]
+        mask = np.square(x) / np.square(sx) + np.square(y) / np.square(sy) <= chi2.ppf(
+            0.95, df=2
+        )
+        array = np.zeros(self.shape, dtype="bool")
+        array[mask] = True
+        return array
 
     @cachedproperty
     def best_fit_lines(self):
@@ -157,3 +174,19 @@ class Shot(object):
         )
 
         return h_result, v_result
+
+    @cachedproperty
+    def atom_number(self):
+        mag = config.getfloat("beam", "magnification")
+        pixelsize = config.getfloat("camera", "pixel_size") * 1e-3
+        lam = config.getfloat("beam", "wavelength") * 1e-9
+        delta = config.getfloat("beam", "detuning") * 2 * np.pi
+        Gamma = config.getfloat("beam", "linewidth") * 2 * np.pi
+
+        # sodium and camera parameters
+        sigma_0 = (3.0 / (2.0 * np.pi)) * (lam) ** 2  # cross-section
+        sigma = sigma_0 / (1 + (delta / (Gamma / 2)) ** 2)  # off resonance
+        area = (pixelsize * 1e-3 * mag) ** 2  # pixel area in SI units
+
+        density = -np.log(self.transmission_roi, where=self.transmission_roi > 0)
+        return (area / sigma) * np.sum(density)
