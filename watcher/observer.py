@@ -1,5 +1,6 @@
 import re
 import logging
+import traceback
 
 from collections import defaultdict
 from pathlib import Path
@@ -30,7 +31,10 @@ def _check_and_dispatch(bmp_paths):
 
     for name, num in shot_bmps.items():
         if num == 6:  # 1 + 2 + 3
-            _process_shot(name, [paths[f"{name}-{num}"] for num in range(1, 4)])
+            try:
+                _process_shot(name, [paths[f"{name}-{num}"] for num in range(1, 4)])
+            except Exception as e:
+                logging.error(traceback.format_exc())
 
 
 def _process_shot(name, paths):

@@ -1,17 +1,13 @@
 """Shot-related objects (holds raw and calculated image data for a shot)"""
-from __future__ import print_function
-from __future__ import division
-
 import logging
 
 import imageio
 import numpy as np
 
 from boltons.cacheutils import cachedproperty
-from scipy.ndimage import filters
+from scipy.stats.distributions import chi2
 from lmfit import Model
 from lmfit.models import GaussianModel, ConstantModel
-from scipy.stats.distributions import chi2
 
 from fitting.utils import ravel, gaussian_2D
 
@@ -20,9 +16,6 @@ from config import config
 
 class Shot(object):
     """A single shot (3 bmp) sequence"""
-
-    kernel = 3  # for gaussian smoothing
-    pixelsize = 3.75e-3  # 3.75 um, reported in mm.
 
     def __init__(self, bmp_paths):
         logging.info("Reading image data into arrays")
@@ -41,10 +34,6 @@ class Shot(object):
         """Pixel width of each BMP"""
         return self.shape[1]
 
-    @property
-    def pixels(self):
-        return [0, Shot.pixelsize * self.width, Shot.pixelsize * self.height, 0]
-
     @cachedproperty
     def meshgrid(self):
         """Create a meshgrid: each pixel is (3.75 um) x (3.75 um); images
@@ -59,7 +48,6 @@ class Shot(object):
         PROCESSING:
         - subtract background from both data and beam arrays
         - divide absorption data by beam background to get the transmission t^2
-         - apply a Gaussian kernel filter to smooth out remaining noise
         OUTPUT: numpy array containing transmission (0 < t^2 < 1) values
         """
         logging.info("Performing background subtraction")

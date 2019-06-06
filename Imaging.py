@@ -16,8 +16,6 @@ STEP 6. After the last shot, hit the red X on the top right of the display.
 It will say that python.exe is not responding; close the program.
 Raw data and each live-updated image are saved in their respective folders.
 """
-from __future__ import print_function
-
 import time
 import os
 import math
