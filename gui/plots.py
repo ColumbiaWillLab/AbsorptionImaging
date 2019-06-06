@@ -72,7 +72,7 @@ class FitParams(ttk.Frame):
         keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
         for i, k in enumerate(keys):
             p = fit_params[k]
-            if k in keys[1:5]:
+            if k in ["x0", "y0", "sx", "sy"]:
                 p *= pixel_size
             elif k == "theta":
                 p = np.degrees(p)
