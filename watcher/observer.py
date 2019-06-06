@@ -6,7 +6,7 @@ from pathlib import Path
 from watchdog.observers import Observer
 
 import shots
-import fitting
+# import fitting
 import density
 import plotting
 
@@ -40,16 +40,16 @@ def _process_shot(name, paths):
     logging.info("\n")
     logging.info("2: GAUSSIAN FITTING (2D IMAGE)")
     logging.info("-------------------------------")
-    final_error, best, zoomed, int_error = fitting.two_D_gaussian(
-        "automatic", 5, shot, 1
-    )
+    # final_error, best, zoomed, int_error = fitting.two_D_gaussian(
+    #     "automatic", 5, shot, 1
+    # )
 
-    logging.info("\n")
-    logging.info("3: GAUSSIAN FITTING (1D SLICES)")
-    logging.info("-------------------------------")
-    fit_h, fit_v, param_h, param_v, x_hor, y_hor, x_ver, y_ver, x_axis, y_axis, horizontal, vertical = fitting.one_D_gaussian(
-        shot, best
-    )
+    # logging.info("\n")
+    # logging.info("3: GAUSSIAN FITTING (1D SLICES)")
+    # logging.info("-------------------------------")
+    # fit_h, fit_v, param_h, param_v, x_hor, y_hor, x_ver, y_ver, x_axis, y_axis, horizontal, vertical = fitting.one_D_gaussian(
+    #     shot, best
+    # )
 
     logging.info("\n")
     logging.info("4: PHYSICAL DENSITY ANALYSIS")

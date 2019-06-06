@@ -29,7 +29,7 @@ import matplotlib.gridspec as gridspec
 
 import Helper as hp
 import shots
-import fitting
+import fitting.gaussian as fitting
 
 np.set_printoptions(suppress=True)  # suppress scientific notation
 start = time.clock()

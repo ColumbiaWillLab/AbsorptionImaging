@@ -6,7 +6,8 @@ from watcher.observer import start_observer
 from gui.application import start
 from gui.logs import queue_handler
 
-if __name__ == "__main__":
+
+def main():
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(message)s",
@@ -22,3 +23,7 @@ if __name__ == "__main__":
     observer = start_observer(directory)
 
     start([observer])
+
+
+if __name__ == "__main__":
+    main()
