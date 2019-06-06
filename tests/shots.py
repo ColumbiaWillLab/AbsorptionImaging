@@ -14,23 +14,13 @@ params = shot.twoD_gaussian.best_values
 plt.imshow(shot.absorption, cmap="gray")
 plt.colorbar()
 plt.contour(
-    gaussian_2D(
-        x,
-        y,
-        params["A"],
-        params["x0"],
-        params["y0"],
-        params["sx"],
-        params["sy"],
-        params["theta"],
-        params["z0"],
-    ),
-    levels=3,
+    shot.twoD_gaussian.eval(x=x, y=y).reshape(shot.shape),
+    levels=shot.contour_levels,
     cmap="gray",
 )
 plt.axhline(params["y0"])
 plt.axvline(params["x0"])
-
+print(shot.contour_levels)
 plt.show()
 
 hr, vr = shot.oneD_gaussians

@@ -121,6 +121,17 @@ class Shot(object):
         return result
 
     @cachedproperty
+    def contour_levels(self):
+        bp_2D = self.twoD_gaussian.best_values
+        x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
+        sx_pts = x0 + sx * np.arange(3, 0, -1)
+        sy_pts = y0 + sy * np.arange(3, 0, -1)
+        x, y = np.meshgrid(sx_pts, sy_pts)
+
+        contour_levels = self.twoD_gaussian.eval(x=x, y=y).reshape((3, 3))
+        return np.diag(contour_levels)
+
+    @cachedproperty
     def best_fit_lines(self):
         bp_2D = self.twoD_gaussian.best_values
         h_data = self.absorption_roi[np.rint(bp_2D["y0"]).astype("int32"), :]
