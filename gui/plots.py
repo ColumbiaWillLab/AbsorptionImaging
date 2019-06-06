@@ -15,7 +15,7 @@ from config import config
 
 from .components import FloatEntry
 
-figure = Figure(figsize=(8, 5), dpi=100)
+figure = Figure(figsize=(8, 5))
 plot_queue = queue.Queue()
 
 
@@ -58,17 +58,24 @@ class FitParams(ttk.Frame):
         save = ttk.Button(self, text="Save", command=self.save_config)
         save.grid(row=p_idx, column=1)
 
-        labels = ["A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
+        labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
         for l_idx, lbl in enumerate(labels):
             ttk.Label(self, text=lbl).grid(row=l_idx, column=2)
 
-        for f_idx in range(7):
+        for f_idx in range(8):
             entry = ttk.Entry(self, state="readonly")
             entry.grid(row=f_idx, column=3)
             self.fit_params.append(entry)
 
     def display(self, fit_params):
-        for i, p in enumerate(fit_params[0:7]):
+        pixel_size = config.getfloat("camera", "pixel_size") * 1e-3
+        keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
+        for i, k in enumerate(keys):
+            p = fit_params[k]
+            if k in keys[1:5]:
+                p *= pixel_size
+            elif k == "theta":
+                p = np.degrees(p)
             entry = self.fit_params[i]
             entry.configure(state="normal")
             entry.delete(0, "end")

@@ -6,6 +6,7 @@ from pathlib import Path
 from watchdog.observers import Observer
 
 import shots
+
 # import fitting
 import density
 import plotting
@@ -38,42 +39,15 @@ def _process_shot(name, paths):
     shot = shots.Shot(paths)
 
     logging.info("\n")
-    logging.info("2: GAUSSIAN FITTING (2D IMAGE)")
+    logging.info("2: GAUSSIAN FITTING")
     logging.info("-------------------------------")
-    # final_error, best, zoomed, int_error = fitting.two_D_gaussian(
-    #     "automatic", 5, shot, 1
-    # )
+    shot.twoD_gaussian
+    shot.oneD_gaussians
 
-    # logging.info("\n")
-    # logging.info("3: GAUSSIAN FITTING (1D SLICES)")
-    # logging.info("-------------------------------")
-    # fit_h, fit_v, param_h, param_v, x_hor, y_hor, x_ver, y_ver, x_axis, y_axis, horizontal, vertical = fitting.one_D_gaussian(
-    #     shot, best
-    # )
-
-    logging.info("\n")
-    logging.info("4: PHYSICAL DENSITY ANALYSIS")
-    logging.info("-------------------------------")
-    atom_num = density.atom_number(shot)
-    logging.info("Atom number: %.2e", atom_num)
-
-    plotting.plot(
-        figure,
-        shot,
-        best,
-        atom_num,
-        x_axis,
-        y_axis,
-        fit_h,
-        fit_v,
-        horizontal,
-        vertical,
-        x_hor,
-        y_hor,
-        x_ver,
-        y_ver,
+    plotting.plot(figure, shot)
+    plot_queue.put(
+        (dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values), True)
     )
-    plot_queue.put((best, True))
 
     move_raw_images(paths)
 

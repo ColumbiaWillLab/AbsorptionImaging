@@ -37,7 +37,7 @@ hr.plot()
 plt.show()
 
 print(shot.atom_number)
-
+print(dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values))
 # plt.imshow(shot.two_sigma_mask)
 # plt.contour(
 #     shot.twoD_gaussian.eval(x=x, y=y).reshape(shot.shape),

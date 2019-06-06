@@ -107,7 +107,7 @@ class Shot(object):
         model.set_param_hint("y0", value=y0, min=0, max=self.height)
         model.set_param_hint("sx", min=1, max=self.width)
         model.set_param_hint("sy", min=1, max=self.height)
-        model.set_param_hint("theta", min=-np.pi / 2, max=np.pi / 2)
+        model.set_param_hint("theta", min=-np.pi / 4, max=np.pi / 4)
         model.set_param_hint("z0", min=-1, max=1)
 
         result = model.fit(
