@@ -3,8 +3,11 @@ import logging
 
 import imageio
 import numpy as np
+import matplotlib.colors as colors
+import matplotlib.gridspec as gridspec
 
 from boltons.cacheutils import cachedproperty
+from scipy.ndimage import median_filter
 from scipy.stats.distributions import chi2
 from lmfit import Model
 from lmfit.models import GaussianModel, ConstantModel
@@ -14,7 +17,7 @@ from fitting.utils import ravel, gaussian_2D
 from config import config
 
 
-class Shot(object):
+class Shot:
     """A single shot (3 bmp) sequence"""
 
     def __init__(self, bmp_paths):
@@ -34,22 +37,20 @@ class Shot(object):
         """Pixel width of each BMP"""
         return self.shape[1]
 
-    @cachedproperty
+    @property
     def meshgrid(self):
-        """Create a meshgrid: each pixel is (3.75 um) x (3.75 um); images
-        have resolution (964 p) x (1292 p) --> (3.615 mm) x (4.845 mm)"""
+        """Returns a meshgrid with the whole image dimensions. The meshgrid is an (x, y) tuple of
+        numpy matrices whose pairs reference every coordinate in the image."""
         y, x = np.mgrid[: self.height, : self.width]  # mgrid is reverse of meshgrid
         return x, y
 
     @cachedproperty
     def transmission(self):
-        """
-        INPUT: 3 image arrays (atoms, beam, dark-field)
-        PROCESSING:
-        - subtract background from both data and beam arrays
-        - divide absorption data by beam background to get the transmission t^2
-        OUTPUT: numpy array containing transmission (0 < t^2 < 1) values
-        """
+        """Returns the beam and dark-field compensated transmission image. Dark-field is subtracted
+        from both the atom image and the beam image, and the atom image is divided by the beam
+        image, giving the transmission t^2. The values should optimally lie in the range of [0, 1]
+        but can realistically be in the range of [-0.1, 1.5] due to noise and beam variation across
+        images."""
         logging.info("Performing background subtraction")
         atoms = np.subtract(self.data, self.dark)
         light = np.subtract(self.beam, self.dark)
@@ -61,21 +62,26 @@ class Shot(object):
         transmission = np.divide(atoms, light, where=light > threshold)
         transmission[light <= threshold] = 1
 
+        transmission = median_filter(transmission, size=20)
+
         return transmission
 
     @cachedproperty
     def absorption(self):
+        """The "inverse" of the transmission (assuming max transmission is 1)"""
         return 1 - self.transmission
 
     @property
     def transmission_roi(self):
+        """Transmission pixel matrix bounded by the region of interest."""
         return self.transmission
 
     @property
     def absorption_roi(self):
+        """Absorption pixel matrix bounded by the region of interest."""
         return self.absorption
 
-    @cachedproperty
+    @property
     def peak(self):
         """Returns x, y, z of brightest pixel in absorption ROI"""
         y, x = np.unravel_index(np.argmax(self.absorption_roi), self.shape)
@@ -112,8 +118,9 @@ class Shot(object):
         logging.info(result.fit_report())
         return result
 
-    @cachedproperty
+    @property
     def contour_levels(self):
+        """Returns the 1-sigma, 2-sigma, and 3-sigma z values of the 2D Gaussian model."""
         bp_2D = self.twoD_gaussian.best_values
         x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
         sx_pts = x0 + sx * np.arange(3, 0, -1)
@@ -123,8 +130,9 @@ class Shot(object):
         contour_levels = self.twoD_gaussian.eval(x=x, y=y).reshape((3, 3))
         return np.diag(contour_levels)
 
-    @cachedproperty
+    @property
     def two_sigma_mask(self):
+        """Returns a numpy mask of pixels within the 2-sigma limit of the model (no ROI)"""
         # TODO: assumes independence, needs covar matrix
         bp_2D = self.twoD_gaussian.best_values
         x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
@@ -136,8 +144,10 @@ class Shot(object):
         array[mask] = True
         return array
 
-    @cachedproperty
+    @property
     def best_fit_lines(self):
+        """Gets the absorption ROI values across the horizontal/vertical lines (no theta) of the 2D
+        Gaussian fit."""
         bp_2D = self.twoD_gaussian.best_values
         h_data = self.absorption_roi[np.rint(bp_2D["y0"]).astype("int32"), :]
         v_data = self.absorption_roi[:, np.rint(bp_2D["x0"]).astype("int32")]
@@ -145,6 +155,7 @@ class Shot(object):
 
     @cachedproperty
     def oneD_gaussians(self):
+        """Returns a tuple of (hor, ver) 1D Gaussian ModelResult across the 2D best fit lines."""
         bp_2D = self.twoD_gaussian.best_values
         h_data, v_data = self.best_fit_lines
 
@@ -163,18 +174,64 @@ class Shot(object):
 
         return h_result, v_result
 
-    @cachedproperty
+    @property
     def atom_number(self):
-        mag = config.getfloat("beam", "magnification")
-        pixelsize = config.getfloat("camera", "pixel_size") * 1e-3
-        lam = config.getfloat("beam", "wavelength") * 1e-9
-        delta = config.getfloat("beam", "detuning") * 2 * np.pi
-        Gamma = config.getfloat("beam", "linewidth") * 2 * np.pi
-
+        """Calculates the total atom number from the transmission ROI values."""
         # sodium and camera parameters
-        sigma_0 = (3.0 / (2.0 * np.pi)) * (lam) ** 2  # cross-section
-        sigma = sigma_0 / (1 + (delta / (Gamma / 2)) ** 2)  # off resonance
-        area = (pixelsize * 1e-3 * mag) ** 2  # pixel area in SI units
+        sigma_0 = (3 / (2 * np.pi)) * np.square(config.wavelength)  # cross-section
+        sigma = sigma_0 * np.reciprocal(
+            1 + np.square(config.detuning / (config.linewidth / 2))
+        )  # off resonance
+        area = np.square(
+            config.pixel_size * 1e-3 * config.magnification
+        )  # pixel area in SI units
 
         density = -np.log(self.transmission_roi, where=self.transmission_roi > 0)
         return (area / sigma) * np.sum(density)
+
+    def plot(self, fig):
+        fig.clf()
+        norm = (-0.1, 1.0)
+        color_norm = colors.Normalize(*norm)
+
+        x, y = self.meshgrid
+        params = self.twoD_gaussian.best_values
+        h, v = self.best_fit_lines
+        hfit, vfit = self.oneD_gaussians
+
+        ratio = [1, 9]
+        gs = gridspec.GridSpec(2, 2, width_ratios=ratio, height_ratios=ratio)
+
+        image = fig.add_subplot(gs[1, 1])
+        image.imshow(self.absorption, cmap=config.colormap, norm=color_norm)
+
+        image.contour(
+            self.twoD_gaussian.eval(x=x, y=y).reshape(self.shape),
+            levels=self.contour_levels,
+            cmap="magma",
+            linewidths=1,
+            norm=color_norm,
+        )
+
+        image.axhline(params["y0"], linewidth=0.3)
+        image.axvline(params["x0"], linewidth=0.3)
+
+        h_x = np.arange(h.shape[0])
+        h_y = hfit.eval(x=h_x)
+        v_y = np.arange(v.shape[0])
+        v_x = vfit.eval(x=v_y)
+
+        hor = fig.add_subplot(gs[0, 1])
+        hor.plot(h_x, h, "ko", markersize=0.2)
+        hor.plot(h_x, h_y, "r", linewidth=0.5)
+        hor.set_ylim(*norm)
+        hor.get_xaxis().set_visible(False)
+
+        ver = fig.add_subplot(gs[1, 0])
+        ver.plot(v, v_y, "ko", markersize=0.2)
+        ver.plot(v_x, v_y, "r", linewidth=0.5)
+        ver.set_xlim(*norm)
+        ver.invert_xaxis()
+        ver.get_yaxis().set_visible(False)
+
+        return fig

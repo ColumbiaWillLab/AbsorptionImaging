@@ -1,15 +1,17 @@
 import signal
-import time
 import tkinter as tk
 
 from tkinter import font
 from tkinter import ttk
 
 from gui.logs import LogTextBox, queue_handler
-from gui.plots import MplFigure, FitParams, TemperatureParams, plot_queue
+from gui.plots import MplFigure, FitParams, TemperatureParams, PlotSettings, plot_queue
 
 
 class Application(ttk.Frame):
+    """Main wrapper class for the GUI. Acts as parent frame for interior widgets.
+    We also give it a reference to the other running threads to handle shutdown"""
+
     def __init__(self, master, threads=None):
         pad = 5
 
@@ -28,8 +30,10 @@ class Application(ttk.Frame):
         tabs = ttk.Notebook(self)
         fp = FitParams(tabs)
         temp = TemperatureParams(tabs)
+        settings = PlotSettings(tabs)
         tabs.add(fp, text="Gaussian")
         tabs.add(temp, text="Temperature")
+        tabs.add(settings, text="Plot Settings")
         self.fit_params = fp
         tabs.grid(row=0, column=0)
 
@@ -43,41 +47,49 @@ class Application(ttk.Frame):
         console_frame.grid(row=1, column=0, padx=pad, pady=pad, sticky="NSEW")
         self.console = LogTextBox(console_frame, queue_handler.log_queue)
 
+        # Handle window closure or SIGINT from console
         self.master.protocol("WM_DELETE_WINDOW", self.quit)
         signal.signal(signal.SIGINT, self.quit)
 
         self.after(100, self.poll_plot_queue)
 
     def display(self, plot):
+        """Updates the data display with new info.
+        Plot is a tuple of (fit_params). The figure itself is updated by
+        passing the figure reference around directly."""
         self.fit_params.display(plot[0])
         self.figure.display()
 
     def poll_plot_queue(self):
+        """The plot queue is polled every 100ms for updates."""
         while not plot_queue.empty():
             plot = plot_queue.get(block=False)
             self.display(plot)
         self.after(100, self.poll_plot_queue)
 
     def quit(self, *args):
-        """Shut down Tkinter master and stop/join all threads"""
+        """Shut down Tkinter master and stop/join all threads."""
         for thread in self.threads:
             thread.stop()
 
         for thread in self.threads:
             thread.join(3)
 
-        self.master.quit()
         self.master.destroy()
+        self.master.quit()
 
 
 def mainloop(app):
+    """There is some sort of Tk bug in OS X scroll handling. Wrap the Tk
+    mainloop to recover if encountered."""
     try:
         app.mainloop()
-    except UnicodeDecodeError:
+    except UnicodeDecodeError:  # Tk bug in OS X scroll handling
         mainloop(app)
 
 
 def start(threads):
+    """Construct the root Tk window and start the GUI mainloop."""
     root = tk.Tk()
     root.state("zoomed")
 

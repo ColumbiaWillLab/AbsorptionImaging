@@ -8,6 +8,7 @@ bmp_paths = [f"{path}_{i}.bmp" for i in range(1, 4)]
 
 shot = shots.Shot(bmp_paths)
 x, y = shot.meshgrid
+print(x, y)
 
 print(shot.twoD_gaussian.fit_report())
 print(shot.twoD_gaussian.var_names)

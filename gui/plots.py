@@ -20,6 +20,8 @@ plot_queue = queue.Queue()
 
 
 class MplFigure(object):
+    """Main frame for plots"""
+
     def __init__(self, master):
         self.master = master
 
@@ -37,6 +39,29 @@ class MplFigure(object):
         self.canvas.draw()
 
 
+class PlotSettings(ttk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.master = master
+
+        self.colormap = tk.StringVar(
+            self, name="colormap", value=config.get("plot", "colormap")
+        )
+        color_options = ("cividis", "viridis", "Greys")
+        ttk.Label(self, text="Colormap").grid(row=0, column=0)
+        ttk.OptionMenu(
+            self,
+            self.colormap,
+            self.colormap.get(),
+            *color_options,
+            command=lambda val: self.save_config("colormap", val),
+        ).grid(row=0, column=1)
+
+    def save_config(self, name, val):
+        config.set("plot", name, value=val)
+        config.save()
+
+
 class FitParams(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
@@ -45,7 +70,7 @@ class FitParams(ttk.Frame):
         self.config_params = {}
 
         p_idx = 0
-        for section in config.sections():
+        for section in ("camera", "beam"):
             for key in config[section].keys():
                 text = key.replace("_", " ").capitalize()
                 ttk.Label(self, text=text).grid(row=p_idx, column=0)
@@ -68,12 +93,11 @@ class FitParams(ttk.Frame):
             self.fit_params.append(entry)
 
     def display(self, fit_params):
-        pixel_size = config.getfloat("camera", "pixel_size") * 1e-3
         keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
         for i, k in enumerate(keys):
             p = fit_params[k]
             if k in ["x0", "y0", "sx", "sy"]:
-                p *= pixel_size
+                p *= config.pixel_size
             elif k == "theta":
                 p = np.degrees(p)
             entry = self.fit_params[i]

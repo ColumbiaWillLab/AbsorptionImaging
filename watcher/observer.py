@@ -6,15 +6,9 @@ from collections import defaultdict
 from pathlib import Path
 from watchdog.observers import Observer
 
-import shots
-
-# import fitting
-import density
-import plotting
-
-from .utils import create_handler, move_raw_images
-
+from models import shots
 from gui.plots import figure, plot_queue
+from .utils import create_handler, move_raw_images
 
 
 def _check_and_dispatch(bmp_paths):
@@ -48,7 +42,7 @@ def _process_shot(name, paths):
     shot.twoD_gaussian
     shot.oneD_gaussians
 
-    plotting.plot(figure, shot)
+    shot.plot(figure)
     plot_queue.put(
         (dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values), True)
     )
