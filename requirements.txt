@@ -1,3 +1,4 @@
+altgraph==0.16.1
 appdirs==1.4.3
 argh==0.26.2
 asteval==0.9.14
@@ -7,17 +8,20 @@ black==19.3b0
 boltons==19.1.0
 Click==7.0
 cycler==0.10.0
+future==0.17.1
 imageio==2.5.0
 isort==4.3.20
 kiwisolver==1.1.0
 lazy-object-proxy==1.4.1
 lmfit==0.9.13
+macholib==1.11
 matplotlib==3.1.0
 mccabe==0.6.1
 numpy==1.16.4
-opencv-python==4.1.0.25
 pathtools==0.1.2
+pefile==2019.4.18
 Pillow==6.0.0
+PyInstaller==3.4
 pylint==2.3.1
 pyparsing==2.4.0
 python-dateutil==2.8.0
