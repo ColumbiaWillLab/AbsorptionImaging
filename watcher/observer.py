@@ -8,7 +8,7 @@ from watchdog.observers import Observer
 
 from models import shots
 from gui.plots import figure, plot_queue
-from .utils import create_handler, move_raw_images
+from .utils import create_handler, move_raw_images, output_path
 
 
 def _check_and_dispatch(bmp_paths):
@@ -34,7 +34,7 @@ def _check_and_dispatch(bmp_paths):
 def _process_shot(name, paths):
     logging.info("1: PROCESSING SHOT %s", name)
     logging.info("-------------------------------")
-    shot = shots.Shot(paths)
+    shot = shots.Shot(name, paths)
 
     logging.info("\n")
     logging.info("2: GAUSSIAN FITTING")
@@ -46,6 +46,7 @@ def _process_shot(name, paths):
     plot_queue.put(
         (dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values), True)
     )
+    figure.savefig(output_path(name))
 
     move_raw_images(paths)
 

@@ -27,7 +27,7 @@ class MplFigure(object):
 
         canvas = FigureCanvasTkAgg(figure, master=master)
         canvas.draw()
-        canvas.get_tk_widget().pack(side="top", fill="both", expand=1)
+        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
 
         # toolbar = NavigationToolbar2Tk(canvas, master)
         # toolbar.update()

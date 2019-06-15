@@ -32,3 +32,10 @@ def move_raw_images(paths):
 
     for path in paths:
         path.replace(destination.joinpath(path.name))
+
+
+def output_path(name):
+    """Move processed images to "Analysis Results" folder by date"""
+    output = Path("../Analysis Results/").joinpath(str(date.today()))
+    output.mkdir(parents=True, exist_ok=True)
+    return output.joinpath(f"{name}.png")

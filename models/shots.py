@@ -20,12 +20,13 @@ from config import config
 class Shot:
     """A single shot (3 bmp) sequence"""
 
-    def __init__(self, bmp_paths):
+    def __init__(self, name, bmp_paths):
         logging.info("Reading image data into arrays")
         bmps = map(imageio.imread, bmp_paths)
         bmps = map(lambda x: x.astype("int16"), bmps)  # prevent underflow
         (self.data, self.beam, self.dark) = bmps
         self.shape = self.data.shape
+        self.name = name
 
     @property
     def height(self):
