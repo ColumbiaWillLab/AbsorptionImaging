@@ -38,7 +38,7 @@ class Shot:
         """Pixel width of each BMP"""
         return self.shape[1]
 
-    @property
+    @cachedproperty
     def meshgrid(self):
         """Returns a meshgrid with the whole image dimensions. The meshgrid is an (x, y) tuple of
         numpy matrices whose pairs reference every coordinate in the image."""
@@ -63,7 +63,7 @@ class Shot:
         transmission = np.divide(atoms, light, where=light > threshold)
         transmission[light <= threshold] = 1
 
-        transmission = median_filter(transmission, size=20)
+        # transmission = median_filter(transmission, size=20)
 
         return transmission
 
@@ -72,17 +72,17 @@ class Shot:
         """The "inverse" of the transmission (assuming max transmission is 1)"""
         return 1 - self.transmission
 
-    @property
+    @cachedproperty
     def transmission_roi(self):
         """Transmission pixel matrix bounded by the region of interest."""
         return self.transmission
 
-    @property
+    @cachedproperty
     def absorption_roi(self):
         """Absorption pixel matrix bounded by the region of interest."""
         return self.absorption
 
-    @property
+    @cachedproperty
     def peak(self):
         """Returns x, y, z of brightest pixel in absorption ROI"""
         y, x = np.unravel_index(np.argmax(self.absorption_roi), self.shape)
@@ -93,6 +93,7 @@ class Shot:
     @cachedproperty
     def twoD_gaussian(self):
         """Returns an LMFIT ModelResult of the 2D Gaussian for absorption ROI"""
+        logging.info("Running 2D fit")
         x, y = self.meshgrid
         x0, y0, A = self.peak
 
@@ -119,7 +120,7 @@ class Shot:
         logging.info(result.fit_report())
         return result
 
-    @property
+    @cachedproperty
     def contour_levels(self):
         """Returns the 1-sigma, 2-sigma, and 3-sigma z values of the 2D Gaussian model."""
         bp_2D = self.twoD_gaussian.best_values
@@ -131,7 +132,7 @@ class Shot:
         contour_levels = self.twoD_gaussian.eval(x=x, y=y).reshape((3, 3))
         return np.diag(contour_levels)
 
-    @property
+    @cachedproperty
     def two_sigma_mask(self):
         """Returns a numpy mask of pixels within the 2-sigma limit of the model (no ROI)"""
         # TODO: assumes independence, needs covar matrix
@@ -145,7 +146,7 @@ class Shot:
         array[mask] = True
         return array
 
-    @property
+    @cachedproperty
     def best_fit_lines(self):
         """Gets the absorption ROI values across the horizontal/vertical lines (no theta) of the 2D
         Gaussian fit."""
@@ -175,7 +176,7 @@ class Shot:
 
         return h_result, v_result
 
-    @property
+    @cachedproperty
     def atom_number(self):
         """Calculates the total atom number from the transmission ROI values."""
         # sodium and camera parameters
