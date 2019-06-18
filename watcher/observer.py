@@ -5,6 +5,7 @@ import traceback
 from collections import defaultdict
 from pathlib import Path
 from watchdog.observers import Observer
+from matplotlib.figure import Figure
 
 from models import shots
 from gui.plots import figure, plot_queue
@@ -46,7 +47,10 @@ def _process_shot(name, paths):
     plot_queue.put(
         (dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values), True)
     )
-    figure.savefig(output_path(name))
+
+    savefig = Figure(figsize=(8, 5))
+    shot.plot(savefig)
+    savefig.savefig(output_path(name), dpi=150)
 
     move_raw_images(paths)
 
