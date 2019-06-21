@@ -162,17 +162,31 @@ class Shot:
         h_data, v_data = self.best_fit_lines
 
         model = GaussianModel() + ConstantModel()
-        model.set_param_hint("amplitude", value=bp_2D["A"])
+        model.set_param_hint(
+            "amplitude",
+            min=bp_2D["A"] * min(bp_2D["sx"], bp_2D["sy"]) * np.sqrt(2 * np.pi) * 0.5,
+            max=bp_2D["A"] * max(bp_2D["sx"], bp_2D["sy"]) * np.sqrt(2 * np.pi) * 1.5,
+        )  # GaussianModel is normalized, assume value lies between 50% and 150% of 2D fit results
         model.set_param_hint("center", min=0, max=np.max(self.shape))
         model.set_param_hint("sigma", min=0, max=np.max(self.shape))
         model.set_param_hint("c", value=0, min=-0.1, max=0.3)
 
         h_result = model.fit(
-            h_data, x=np.arange(h_data.shape[0]), center=bp_2D["x0"], sigma=bp_2D["sx"]
+            h_data,
+            x=np.arange(h_data.shape[0]),
+            amplitude=bp_2D["A"] * bp_2D["sx"] * np.sqrt(2 * np.pi),
+            center=bp_2D["x0"],
+            sigma=bp_2D["sx"],
         )
+        logging.debug(h_result.fit_report())
         v_result = model.fit(
-            v_data, x=np.arange(v_data.shape[0]), center=bp_2D["y0"], sigma=bp_2D["sy"]
+            v_data,
+            x=np.arange(v_data.shape[0]),
+            amplitude=bp_2D["A"] * bp_2D["sy"] * np.sqrt(2 * np.pi),
+            center=bp_2D["y0"],
+            sigma=bp_2D["sy"],
         )
+        logging.debug(v_result.fit_report())
 
         return h_result, v_result
 
