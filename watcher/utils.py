@@ -25,9 +25,11 @@ def create_handler(logging, callback):
     return event_handler
 
 
-def move_raw_images(paths):
+def move_raw_images(paths, failed=False):
     """Move original images to "Raw Data" folder by date"""
     destination = Path("../Raw Data/").joinpath(str(date.today()))
+    if failed:
+        destination = destination.joinpath("failed")
     destination.mkdir(parents=True, exist_ok=True)
 
     for path in paths:

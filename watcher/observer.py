@@ -14,7 +14,7 @@ from .utils import create_handler, move_raw_images, output_path
 
 def _check_and_dispatch(bmp_paths):
     shot_bmps = defaultdict(int)
-    paths = {}
+    all_paths = {}
 
     for path in map(Path, bmp_paths):
         if path.is_file():  # check for existence
@@ -22,14 +22,16 @@ def _check_and_dispatch(bmp_paths):
             if match:
                 name, idx = match.groups()
                 shot_bmps[name] += int(idx)
-                paths[f"{name}-{idx}"] = path
+                all_paths[f"{name}-{idx}"] = path
 
     for name, num in shot_bmps.items():
         if num == 6:  # 1 + 2 + 3
+            paths = [all_paths[f"{name}-{num}"] for num in range(1, 4)]
             try:
-                _process_shot(name, [paths[f"{name}-{num}"] for num in range(1, 4)])
+                _process_shot(name, paths)
             except Exception as e:
                 logging.error(traceback.format_exc())
+                move_raw_images(paths, failed=True)
 
 
 def _process_shot(name, paths):
