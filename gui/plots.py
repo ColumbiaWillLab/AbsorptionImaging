@@ -1,6 +1,5 @@
-import queue
-
 from math import isfinite
+from collections import deque
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -15,9 +14,6 @@ from config import config
 
 from .components import FloatEntry
 
-figure = Figure(figsize=(8, 5))
-plot_queue = queue.Queue()
-
 
 class MplFigure(object):
     """Main frame for plots"""
@@ -25,17 +21,16 @@ class MplFigure(object):
     def __init__(self, master):
         self.master = master
 
-        canvas = FigureCanvasTkAgg(figure, master=master)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        self.figure = Figure(figsize=(8, 5))
+        self.canvas = FigureCanvasTkAgg(self.figure, master=master)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
 
-        # toolbar = NavigationToolbar2Tk(canvas, master)
-        # toolbar.update()
+        # self.toolbar = NavigationToolbar2Tk(canvas, master)
+        # self.toolbar.update()
 
-        self.canvas = canvas
-        # self.toolbar = toolbar
-
-    def display(self):
+    def display(self, shot):
+        shot.plot(self.figure)
         self.canvas.draw()
 
 
@@ -137,3 +132,42 @@ class TemperatureParams(ttk.Frame):
                 raise ValueError
         except ValueError:
             tk.messagebox.showerror("Temperature Fitting Alert", "Invalid Entry!")
+
+
+class ShotList(ttk.Treeview):
+    def __init__(self, master, **kw):
+        kw["columns"] = ("atoms", "sigma_x", "sigma_y")
+        kw["selectmode"] = "none"
+        super().__init__(master, **kw)
+
+        self.column("#0", anchor="w", width=200)
+        self.column("atoms", anchor="w", width=100, stretch=False)
+        self.column("sigma_x", anchor="w", width=100, stretch=False)
+        self.column("sigma_y", anchor="w", width=100, stretch=False)
+
+        self.heading("#0", text="Shot", anchor="w")
+        self.heading("atoms", text="Atom Number", anchor="w")
+        self.heading("sigma_x", text="Std. Dev. X", anchor="w")
+        self.heading("sigma_y", text="Std. Dev. Y", anchor="w")
+
+        self.pack(fill="both", expand=True)
+        self.deque = deque(maxlen=5)
+
+    def add(self, shot):
+        self.deque.append(shot)
+        self.clear()
+        for shot in self.deque:
+            values = (
+                shot.atom_number,
+                shot.twoD_gaussian.best_values["sx"] * config.pixel_size,
+                shot.twoD_gaussian.best_values["sy"] * config.pixel_size,
+            )
+            self.insert(
+                "",
+                "end",
+                text=shot.name,
+                values=tuple(map(lambda x: "{:.4g}".format(x), values)),
+            )
+
+    def clear(self):
+        self.delete(*self.get_children())

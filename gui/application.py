@@ -4,8 +4,9 @@ import tkinter as tk
 from tkinter import font
 from tkinter import ttk
 
+from queues import shot_queue
 from gui.logs import LogTextBox, queue_handler
-from gui.plots import MplFigure, FitParams, TemperatureParams, PlotSettings, plot_queue
+from gui.plots import MplFigure, FitParams, TemperatureParams, PlotSettings, ShotList
 
 
 class Application(ttk.Frame):
@@ -42,30 +43,39 @@ class Application(ttk.Frame):
         image_frame.grid(row=0, column=1, rowspan=2, padx=pad, pady=pad, sticky="NSEW")
         self.figure = MplFigure(image_frame)
 
-        # Logs
-        console_frame = ttk.Labelframe(self, text="Log", relief="sunken")
-        console_frame.grid(row=1, column=0, padx=pad, pady=pad, sticky="NSEW")
+        # Logs and TreeView
+        left_bottom_frame = ttk.Frame(self)
+        left_bottom_frame.grid(row=1, column=0, padx=pad, pady=pad, sticky="NSEW")
+
+        shot_frame = ttk.Labelframe(left_bottom_frame, text="Shots")
+        shot_frame.pack(fill="both", expand=False)
+        self.shot_list = ShotList(shot_frame, height=5)
+
+        console_frame = ttk.Labelframe(left_bottom_frame, text="Log", relief="sunken")
+        console_frame.pack(fill="both", expand=True)
         self.console = LogTextBox(console_frame, queue_handler.log_queue)
 
         # Handle window closure or SIGINT from console
         self.master.protocol("WM_DELETE_WINDOW", self.quit)
         signal.signal(signal.SIGINT, self.quit)
 
-        self.after(100, self.poll_plot_queue)
+        self.after(100, self.poll_shot_queue)
 
-    def display(self, plot):
+    def display(self, shot):
         """Updates the data display with new info.
-        Plot is a tuple of (fit_params). The figure itself is updated by
-        passing the figure reference around directly."""
-        self.fit_params.display(plot[0])
-        self.figure.display()
+        The figure itself is updated by passing the figure reference around directly."""
+        self.fit_params.display(
+            dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values)
+        )
+        self.figure.display(shot)
+        self.shot_list.add(shot)
 
-    def poll_plot_queue(self):
+    def poll_shot_queue(self):
         """The plot queue is polled every 100ms for updates."""
-        while not plot_queue.empty():
-            plot = plot_queue.get(block=False)
-            self.display(plot)
-        self.after(100, self.poll_plot_queue)
+        while not shot_queue.empty():
+            shot = shot_queue.get(block=False)
+            self.display(shot)
+        self.after(100, self.poll_shot_queue)
 
     def quit(self, *args):
         """Shut down Tkinter master and stop/join all threads."""

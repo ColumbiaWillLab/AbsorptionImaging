@@ -7,8 +7,8 @@ from pathlib import Path
 from watchdog.observers import Observer
 from matplotlib.figure import Figure
 
+from queues import shot_queue
 from models import shots
-from gui.plots import figure, plot_queue
 from .utils import create_handler, move_raw_images, output_path
 
 
@@ -43,10 +43,7 @@ def _process_shot(name, paths):
     shot.twoD_gaussian
     shot.oneD_gaussians
 
-    shot.plot(figure)
-    plot_queue.put(
-        (dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values), True)
-    )
+    shot_queue.put(shot)
 
     savefig = Figure(figsize=(8, 5))
     shot.plot(savefig)
