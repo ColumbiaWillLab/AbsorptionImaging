@@ -45,7 +45,7 @@ def _process_shot(name, paths):
     shot.twoD_gaussian
     shot.oneD_gaussians
 
-    shot_queue.put(shot)
+    shot_queue.put((shot, {"new": True}))
 
     savefig = Figure(figsize=(8, 5))
     shot.plot(savefig)

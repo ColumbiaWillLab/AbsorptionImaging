@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 from config import config
+from queues import shot_queue
 
 from .components import FloatEntry
 
@@ -137,7 +138,7 @@ class TemperatureParams(ttk.Frame):
 class ShotList(ttk.Treeview):
     def __init__(self, master, **kw):
         kw["columns"] = ("atoms", "sigma_x", "sigma_y")
-        kw["selectmode"] = "none"
+        kw["selectmode"] = "browse"
         super().__init__(master, **kw)
 
         self.column("#0", anchor="w", width=200)
@@ -152,6 +153,9 @@ class ShotList(ttk.Treeview):
 
         self.pack(fill="both", expand=True)
         self.deque = deque(maxlen=5)
+
+        self.bind("<Double-1>", self.on_double_click)
+        self.bind("<Return>", self.on_return_keypress)
 
     def add(self, shot):
         self.deque.append(shot)
@@ -171,3 +175,17 @@ class ShotList(ttk.Treeview):
 
     def clear(self):
         self.delete(*self.get_children())
+
+    def on_double_click(self, event):
+        item = self.item(self.identify("item", event.x, event.y), "text")
+        for shot in self.deque:
+            if shot.name == item:
+                shot_queue.put((shot, {"new": False}))
+                break
+
+    def on_return_keypress(self, event):
+        item = self.item(self.focus(), "text")
+        for shot in self.deque:
+            if shot.name == item:
+                shot_queue.put((shot, {"new": False}))
+                break

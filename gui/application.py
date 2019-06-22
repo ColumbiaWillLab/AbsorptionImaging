@@ -61,20 +61,21 @@ class Application(ttk.Frame):
 
         self.after(100, self.poll_shot_queue)
 
-    def display(self, shot):
+    def display(self, shot, metadata):
         """Updates the data display with new info.
         The figure itself is updated by passing the figure reference around directly."""
         self.fit_params.display(
             dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values)
         )
         self.figure.display(shot)
-        self.shot_list.add(shot)
+        if metadata.get("new", True):
+            self.shot_list.add(shot)
 
     def poll_shot_queue(self):
         """The plot queue is polled every 100ms for updates."""
         while not shot_queue.empty():
-            shot = shot_queue.get(block=False)
-            self.display(shot)
+            shot, metadata = shot_queue.get(block=False)
+            self.display(shot, metadata)
         self.after(100, self.poll_shot_queue)
 
     def quit(self, *args):
