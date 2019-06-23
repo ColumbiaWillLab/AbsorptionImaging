@@ -1,3 +1,3 @@
 import queue
 
-shot_queue = queue.Queue()
+event_queue = queue.Queue()

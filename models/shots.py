@@ -198,9 +198,7 @@ class Shot:
         sigma = sigma_0 * np.reciprocal(
             1 + np.square(config.detuning / (config.linewidth / 2))
         )  # off resonance
-        area = np.square(
-            config.pixel_size * 1e-3 * config.magnification
-        )  # pixel area in SI units
+        area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
         density = -np.log(self.transmission_roi, where=self.transmission_roi > 0)
         return (area / sigma) * np.sum(density)

@@ -26,6 +26,11 @@ class Config(configparser.ConfigParser):
         return self.getfloat("beam", "magnification")
 
     @property
+    def physical_scale(self):
+        """Pixel to real-space size in mm."""
+        return self.pixel_size * self.magnification
+
+    @property
     def wavelength(self):
         """Imaging beam wavelength in nm."""
         return self.getfloat("beam", "wavelength") * 1e-9
@@ -44,6 +49,14 @@ class Config(configparser.ConfigParser):
     def colormap(self):
         """Numpy colormap name"""
         return self.get("plot", "colormap")
+
+    @property
+    def repump_time(self):
+        return self.getfloat("atoms", "repump_time")
+
+    @property
+    def atom_mass(self):
+        return self.getfloat("atoms", "mass")
 
 
 config = Config("config.ini")

@@ -4,7 +4,9 @@ import tkinter as tk
 from tkinter import font
 from tkinter import ttk
 
-from queues import shot_queue
+from queues import event_queue
+from models import shots, time_of_flight
+
 from gui.logs import LogTextBox, queue_handler
 from gui.plots import MplFigure, FitParams, TemperatureParams, PlotSettings, ShotList
 
@@ -35,8 +37,9 @@ class Application(ttk.Frame):
         tabs.add(fp, text="Gaussian")
         tabs.add(temp, text="Temperature")
         tabs.add(settings, text="Plot Settings")
-        self.fit_params = fp
         tabs.grid(row=0, column=0)
+        self.fit_params = fp
+        self.temp_params = temp
 
         # Main image output
         image_frame = ttk.LabelFrame(self)
@@ -59,9 +62,9 @@ class Application(ttk.Frame):
         self.master.protocol("WM_DELETE_WINDOW", self.quit)
         signal.signal(signal.SIGINT, self.quit)
 
-        self.after(100, self.poll_shot_queue)
+        self.after(100, self.poll_event_queue)
 
-    def display(self, shot, metadata):
+    def display_shot(self, shot, metadata):
         """Updates the data display with new info.
         The figure itself is updated by passing the figure reference around directly."""
         self.fit_params.display(
@@ -71,12 +74,19 @@ class Application(ttk.Frame):
         if metadata.get("new", True):
             self.shot_list.add(shot)
 
-    def poll_shot_queue(self):
+    def display_tof(self, tof, metadata):
+        self.figure.display(tof)
+        self.temp_params.display(tof)
+
+    def poll_event_queue(self):
         """The plot queue is polled every 100ms for updates."""
-        while not shot_queue.empty():
-            shot, metadata = shot_queue.get(block=False)
-            self.display(shot, metadata)
-        self.after(100, self.poll_shot_queue)
+        while not event_queue.empty():
+            obj, metadata = event_queue.get(block=False)
+            if isinstance(obj, shots.Shot):
+                self.display_shot(obj, metadata)
+            elif isinstance(obj, time_of_flight.TimeOfFlight):
+                self.display_tof(obj, metadata)
+        self.after(100, self.poll_event_queue)
 
     def quit(self, *args):
         """Shut down Tkinter master and stop/join all threads."""
