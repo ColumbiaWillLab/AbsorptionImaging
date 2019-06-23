@@ -115,7 +115,7 @@ class Shot:
             theta=0,
             z0=0,
             # scale_covar=False,
-            fit_kws={"maxfev": 100, "xtol": 1.0e-3},
+            fit_kws={"maxfev": 100, "xtol": 1e-7},
         )
         logging.info(result.fit_report())
         return result
