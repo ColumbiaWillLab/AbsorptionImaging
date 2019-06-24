@@ -139,14 +139,25 @@ class TemperatureParams(ttk.Frame):
         ttk.Label(rt_frame, text="X Temp.").grid(row=0, column=0)
         ttk.Label(rt_frame, text="Y Temp.").grid(row=1, column=0)
 
-        x_temp_entry = ttk.Entry(rt_frame, state="readonly")
-        y_temp_entry = ttk.Entry(rt_frame, state="readonly")
+        x_temp_entry = ttk.Entry(rt_frame, state="readonly", width=10)
+        y_temp_entry = ttk.Entry(rt_frame, state="readonly", width=10)
 
         x_temp_entry.grid(row=0, column=1)
         y_temp_entry.grid(row=1, column=1)
 
+        ttk.Label(rt_frame, text="Std. Error").grid(row=0, column=2)
+        ttk.Label(rt_frame, text="Std. Error").grid(row=1, column=2)
+
+        x_temp_err = ttk.Entry(rt_frame, state="readonly", width=10)
+        y_temp_err = ttk.Entry(rt_frame, state="readonly", width=10)
+
+        x_temp_err.grid(row=0, column=3)
+        y_temp_err.grid(row=1, column=3)
+
         self.x_temp_entry = x_temp_entry
         self.y_temp_entry = y_temp_entry
+        self.x_temp_err = x_temp_err
+        self.y_temp_err = y_temp_err
 
         # Right Bottom Frame (Config)
         rb_frame = ttk.Frame(self)
@@ -155,11 +166,11 @@ class TemperatureParams(ttk.Frame):
         ttk.Label(rb_frame, text="Repump Time").grid(row=0, column=0)
         ttk.Label(rb_frame, text="Mass").grid(row=1, column=0)
 
-        repump_entry = FloatEntry(rb_frame, state="normal")
+        repump_entry = FloatEntry(rb_frame, state="normal", width=10)
         repump_entry.insert(0, config.repump_time)
         repump_entry.grid(row=0, column=1)
 
-        mass_entry = FloatEntry(rb_frame, state="normal")
+        mass_entry = FloatEntry(rb_frame, state="normal", width=10)
         mass_entry.insert(0, config.atom_mass)
         mass_entry.grid(row=1, column=1)
 
@@ -180,15 +191,17 @@ class TemperatureParams(ttk.Frame):
         observer.start_tof(vals)
 
     def display(self, tof):
-        self.x_temp_entry.configure(state="normal")
-        self.x_temp_entry.delete(0, "end")
-        self.x_temp_entry.insert(0, "{:.4g}".format(tof.x_temp))
-        self.x_temp_entry.configure(state="readonly")
-
-        self.y_temp_entry.configure(state="normal")
-        self.y_temp_entry.delete(0, "end")
-        self.y_temp_entry.insert(0, "{:.4g}".format(tof.y_temp))
-        self.y_temp_entry.configure(state="readonly")
+        pairs = [
+            (self.x_temp_entry, tof.x_temp),
+            (self.y_temp_entry, tof.y_temp),
+            (self.x_temp_err, tof.x_temp_err),
+            (self.y_temp_err, tof.y_temp_err),
+        ]
+        for entry, value in pairs:
+            entry.configure(state="normal")
+            entry.delete(0, "end")
+            entry.insert(0, "{:.4g}".format(value))
+            entry.configure(state="readonly")
 
 
 class ShotList(ttk.Treeview):
