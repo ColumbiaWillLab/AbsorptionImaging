@@ -246,6 +246,7 @@ class Shot:
         ver.plot(v_x, v_y, "r", linewidth=0.5)
         ver.set_xlim(*norm)
         ver.invert_xaxis()
+        ver.invert_yaxis()
         ver.get_yaxis().set_visible(False)
 
         return fig
