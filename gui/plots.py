@@ -154,10 +154,20 @@ class TemperatureParams(ttk.Frame):
         x_temp_err.grid(row=0, column=3)
         y_temp_err.grid(row=1, column=3)
 
+        ttk.Label(rt_frame, text="Mean Atom #").grid(row=2, column=0)
+        atom_n_mean = ttk.Entry(rt_frame, state="readonly", width=10)
+        atom_n_mean.grid(row=2, column=1)
+
+        ttk.Label(rt_frame, text="Coeff. Var.").grid(row=2, column=2)
+        atom_n_cv = ttk.Entry(rt_frame, state="readonly", width=10)
+        atom_n_cv.grid(row=2, column=3)
+
         self.x_temp_entry = x_temp_entry
         self.y_temp_entry = y_temp_entry
         self.x_temp_err = x_temp_err
         self.y_temp_err = y_temp_err
+        self.atom_n_mean = atom_n_mean
+        self.atom_n_cv = atom_n_cv
 
         # Right Bottom Frame (Config)
         rb_frame = ttk.Frame(self)
@@ -191,11 +201,14 @@ class TemperatureParams(ttk.Frame):
         observer.start_tof(vals)
 
     def display(self, tof):
+        atom_n_mean = np.mean(tof.atom_number)
         pairs = [
             (self.x_temp_entry, tof.x_temp),
             (self.y_temp_entry, tof.y_temp),
             (self.x_temp_err, tof.x_temp_err),
             (self.y_temp_err, tof.y_temp_err),
+            (self.atom_n_mean, atom_n_mean),
+            (self.atom_n_cv, np.std(tof.atom_number) / atom_n_mean * 100),
         ]
         for entry, value in pairs:
             entry.configure(state="normal")

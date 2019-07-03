@@ -60,6 +60,10 @@ class TimeOfFlight:
     def y_temp_err(self):
         return self.y_fit[4] * config.atom_mass / KB * 1e6
 
+    @cachedproperty
+    def atom_number(self):
+        return [s.atom_number for s in self.shots]
+
     def add(self, shot, cb):
         if len(self.shots) < self.shots.maxlen:
             logging.info(
