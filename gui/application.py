@@ -80,7 +80,7 @@ class Application(ttk.Frame):
 
     def poll_event_queue(self):
         """The plot queue is polled every 100ms for updates."""
-        while not event_queue.empty():
+        if not event_queue.empty():
             obj, metadata = event_queue.get(block=False)
             if isinstance(obj, shots.Shot):
                 self.display_shot(obj, metadata)
