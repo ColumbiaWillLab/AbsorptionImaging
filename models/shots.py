@@ -201,7 +201,8 @@ class Shot:
         )  # off resonance
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
-        density = -np.log(self.transmission_roi, where=self.transmission_roi > 0)
+        data = self.transmission[self.two_sigma_mask]
+        density = -np.log(data, where=data > 0)
         return (area / sigma) * np.sum(density)
 
     def warm_cache(self, fit=True):
