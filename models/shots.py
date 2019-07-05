@@ -134,25 +134,25 @@ class Shot:
 
     @cachedproperty
     def contour_levels(self):
-        """Returns the 1-sigma, 2-sigma, and 3-sigma z values of the 2D Gaussian model."""
+        """Returns the 0.5-sigma, 1-sigma, and 1.5-sigma z values of the 2D Gaussian model."""
         bp_2D = self.twoD_gaussian.best_values
         x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
-        sx_pts = x0 + sx * np.arange(3, 0, -1)
-        sy_pts = y0 + sy * np.arange(3, 0, -1)
+        sx_pts = x0 + sx * np.array([1.5, 1.0, 0.5])
+        sy_pts = y0 + sy * np.array([1.5, 1.0, 0.5])
         x, y = np.meshgrid(sx_pts, sy_pts)
 
         contour_levels = self.twoD_gaussian.eval(x=x, y=y).reshape((3, 3))
         return np.diag(contour_levels)
 
     @cachedproperty
-    def two_sigma_mask(self):
+    def sigma_mask(self):
         """Returns a numpy mask of pixels within the 2-sigma limit of the model (no ROI)"""
         # TODO: assumes independence, needs covar matrix
         bp_2D = self.twoD_gaussian.best_values
         x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
         y, x = np.ogrid[-y0 : self.height - y0, -x0 : self.width - x0]
         mask = np.square(x) / np.square(sx) + np.square(y) / np.square(sy) <= chi2.ppf(
-            0.95, df=2
+            0.866, df=2
         )
         array = np.zeros(self.shape, dtype="bool")
         array[mask] = True
@@ -212,7 +212,7 @@ class Shot:
         )  # off resonance
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
-        data = self.transmission[self.two_sigma_mask]
+        data = self.transmission[self.sigma_mask]
         density = -np.log(data, where=data > 0)
         return (area / sigma) * np.sum(density)
 
