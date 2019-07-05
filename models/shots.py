@@ -8,6 +8,7 @@ import matplotlib.gridspec as gridspec
 
 from boltons.cacheutils import cachedproperty
 from scipy.stats.distributions import chi2
+from scipy.ndimage import gaussian_filter
 from lmfit import Model
 from lmfit.models import GaussianModel, ConstantModel
 
@@ -45,7 +46,7 @@ class Shot:
         return x, y
 
     @cachedproperty
-    def transmission(self):
+    def transmission_raw(self):
         """Returns the beam and dark-field compensated transmission image. Dark-field is subtracted
         from both the atom image and the beam image, and the atom image is divided by the beam
         image, giving the transmission t^2. The values should optimally lie in the range of [0, 1]
@@ -62,9 +63,19 @@ class Shot:
         transmission = np.divide(atoms, light, where=light > threshold)
         transmission[light <= threshold] = 1
 
-        # transmission = median_filter(transmission, size=20)
-
         return transmission
+
+    @cachedproperty
+    def absorption_raw(self):
+        """Raw absorption data"""
+        return 1 - self.transmission_raw
+
+    @cachedproperty
+    def transmission(self):
+        """The transmission image for fitting (and other derived data) - filtered/clipped"""
+        return gaussian_filter(
+            np.clip(self.transmission_raw, a_min=0, a_max=1), sigma=3
+        )
 
     @cachedproperty
     def absorption(self):
@@ -149,11 +160,11 @@ class Shot:
 
     @cachedproperty
     def best_fit_lines(self):
-        """Gets the absorption ROI values across the horizontal/vertical lines (no theta) of the 2D
+        """Gets the absorption values across the horizontal/vertical lines (no theta) of the 2D
         Gaussian fit."""
         bp_2D = self.twoD_gaussian.best_values
-        h_data = self.absorption_roi[np.rint(bp_2D["y0"]).astype("int32"), :]
-        v_data = self.absorption_roi[:, np.rint(bp_2D["x0"]).astype("int32")]
+        h_data = self.absorption_raw[np.rint(bp_2D["y0"]).astype("int32"), :]
+        v_data = self.absorption_raw[:, np.rint(bp_2D["x0"]).astype("int32")]
         return h_data, v_data
 
     @cachedproperty
@@ -222,7 +233,7 @@ class Shot:
         gs = gridspec.GridSpec(2, 2, width_ratios=ratio, height_ratios=ratio)
 
         image = fig.add_subplot(gs[1, 1])
-        image.imshow(self.absorption, cmap=config.colormap, norm=color_norm)
+        image.imshow(self.absorption_raw, cmap=config.colormap, norm=color_norm)
 
         if kw.get("fit", True):
             x, y = self.meshgrid
