@@ -31,8 +31,8 @@ class MplFigure(object):
         # self.toolbar = NavigationToolbar2Tk(canvas, master)
         # self.toolbar.update()
 
-    def display(self, obj):
-        obj.plot(self.figure)
+    def display(self, obj, fit=True):
+        obj.plot(self.figure, fit=fit)
         self.canvas.draw()
 
 
@@ -77,8 +77,15 @@ class FitParams(ttk.Frame):
                 self.config_params[f"{section}.{key}"] = entry
                 p_idx += 1
 
-        save = ttk.Button(self, text="Save", command=self.save_config)
+        save = ttk.Button(self, text="Save", command=self._save_config)
         save.grid(row=p_idx, column=1)
+
+        self.fitvar = tk.BooleanVar()
+        self.fitvar.set(config.fit)
+        fitbtn = ttk.Checkbutton(
+            self, text="Enable Fitting", variable=self.fitvar, command=self._toggle_fit
+        )
+        fitbtn.grid(row=p_idx + 1, column=1)
 
         labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
         for l_idx, lbl in enumerate(labels):
@@ -89,9 +96,12 @@ class FitParams(ttk.Frame):
             entry.grid(row=f_idx, column=3)
             self.fit_params.append(entry)
 
+    @property
+    def keys(self):
+        return ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
+
     def display(self, fit_params):
-        keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
-        for i, k in enumerate(keys):
+        for i, k in enumerate(self.keys):
             p = fit_params[k]
             if k in ["x0", "y0", "sx", "sy"]:
                 p *= config.pixel_size
@@ -103,12 +113,22 @@ class FitParams(ttk.Frame):
             entry.insert(0, "{:.4g}".format(p))
             entry.configure(state="readonly")
 
-    def save_config(self):
+    def clear(self):
+        for i, k in enumerate(self.keys):
+            entry = self.fit_params[i]
+            entry.configure(state="normal")
+            entry.delete(0, "end")
+            entry.configure(state="readonly")
+
+    def _save_config(self):
         for name, entry in self.config_params.items():
             section, key = name.split(".")
             config[section][key] = str(entry.get())
 
         config.save()
+
+    def _toggle_fit(self):
+        config.fit = self.fitvar.get()
 
 
 class TemperatureParams(ttk.Frame):
@@ -261,12 +281,12 @@ class ShotList(ttk.Treeview):
 
     def _on_double_click(self, event):
         idx = self.index(self.identify("item", event.x, event.y))
-        event_queue.put((self.deque[idx], {"new": False}))
+        event_queue.put((self.deque[idx], {"append": False}))
 
     def _on_return_keypress(self, event):
         idx = self.index(self.focus())
-        event_queue.put((self.deque[idx], {"new": False}))
+        event_queue.put((self.deque[idx], {"append": False}))
 
     def _on_treeview_select(self, event):
         idx = self.index(self.focus())
-        event_queue.put((self.deque[idx], {"new": False}))
+        event_queue.put((self.deque[idx], {"append": False}))

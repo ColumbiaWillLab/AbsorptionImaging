@@ -67,11 +67,14 @@ class Application(ttk.Frame):
     def display_shot(self, shot, metadata):
         """Updates the data display with new info.
         The figure itself is updated by passing the figure reference around directly."""
-        self.fit_params.display(
-            dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values)
-        )
-        self.figure.display(shot)
-        if metadata.get("new", True):
+        self.figure.display(shot, fit=metadata.get("fit", True))
+        if metadata.get("fit", True):
+            self.fit_params.display(
+                dict({"N": shot.atom_number}, **shot.twoD_gaussian.best_values)
+            )
+        else:
+            self.fit_params.clear()
+        if metadata.get("append", True):
             self.shot_list.add(shot)
 
     def display_tof(self, tof, metadata):

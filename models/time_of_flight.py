@@ -73,9 +73,11 @@ class TimeOfFlight:
             )
             self.shots.append(shot)
             if len(self.shots) == self.shots.maxlen:
+                for shot in self.shots:
+                    shot.warm_cache(fit=True)
                 cb(self)
 
-    def plot(self, fig):
+    def plot(self, fig, **kw):
         fig.clf()
         plt = fig.add_subplot()
 

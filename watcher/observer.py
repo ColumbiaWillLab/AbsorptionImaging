@@ -7,6 +7,7 @@ from pathlib import Path
 from watchdog.observers import Observer
 from matplotlib.figure import Figure
 
+from config import config
 from queues import event_queue
 from models import shots, time_of_flight
 from .utils import create_handler, move_raw_images, output_path
@@ -44,23 +45,21 @@ def _check_and_dispatch(bmp_paths):
 
 
 def _process_shot(name, paths):
+    global tof
+
     logging.info("1: PROCESSING SHOT %s", name)
     logging.info("-------------------------------")
+
     shot = shots.Shot(name, paths)
-
-    logging.info("\n")
-    logging.info("2: GAUSSIAN FITTING")
-    logging.info("-------------------------------")
-    shot.twoD_gaussian
-    shot.oneD_gaussians
-
-    event_queue.put((shot, {"new": True}))
+    shot.warm_cache(config.fit)
+    event_queue.put((shot, {"fit": False, "append": False}))
+    if config.fit:
+        event_queue.put((shot, {}))  # Call twice - display transmission before fitting
 
     savefig = Figure(figsize=(8, 5))
-    shot.plot(savefig)
+    shot.plot(savefig, fit=config.fit)
     savefig.savefig(output_path(name), dpi=150)
 
-    global tof
     tof.add(shot, lambda x: event_queue.put((x, {})))
 
 

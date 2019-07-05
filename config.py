@@ -10,6 +10,9 @@ class Config(configparser.ConfigParser):
         super().__init__()
         self.read(self.filename)
 
+        # Non-persistent attributes
+        self.fit = True
+
     def save(self):
         """Save current state to file."""
         with open(self.filename, "w") as configfile:
