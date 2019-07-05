@@ -80,12 +80,21 @@ class FitParams(ttk.Frame):
         save = ttk.Button(self, text="Save", command=self._save_config)
         save.grid(row=p_idx, column=1)
 
+        self.fixtheta = tk.BooleanVar()
+        self.fixtheta.set(config.fix_theta)
+        fixtheta_btn = ttk.Checkbutton(
+            self,
+            text="Fix Theta",
+            variable=self.fixtheta,
+            command=self._toggle_fixtheta,
+        )
+        fixtheta_btn.grid(row=p_idx + 1, column=1)
         self.fitvar = tk.BooleanVar()
         self.fitvar.set(config.fit)
         fitbtn = ttk.Checkbutton(
             self, text="Enable Fitting", variable=self.fitvar, command=self._toggle_fit
         )
-        fitbtn.grid(row=p_idx + 1, column=1)
+        fitbtn.grid(row=p_idx + 2, column=1)
 
         labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
         for l_idx, lbl in enumerate(labels):
@@ -125,6 +134,10 @@ class FitParams(ttk.Frame):
             section, key = name.split(".")
             config[section][key] = str(entry.get())
 
+        config.save()
+
+    def _toggle_fixtheta(self):
+        config["fit"]["fix_theta"] = str(self.fixtheta.get())
         config.save()
 
     def _toggle_fit(self):

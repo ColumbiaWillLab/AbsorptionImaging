@@ -61,5 +61,9 @@ class Config(configparser.ConfigParser):
     def atom_mass(self):
         return self.getfloat("atoms", "mass")
 
+    @property
+    def fix_theta(self):
+        return self.getboolean("fit", "fix_theta")
+
 
 config = Config("config.ini")
