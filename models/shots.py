@@ -241,14 +241,6 @@ class Shot:
             h, v = self.best_fit_lines
             hfit, vfit = self.oneD_gaussians
 
-            image.contour(
-                self.twoD_gaussian.eval(x=x, y=y).reshape(self.shape),
-                levels=self.contour_levels,
-                cmap="magma",
-                linewidths=1,
-                norm=color_norm,
-            )
-
             image.axhline(params["y0"], linewidth=0.3)
             image.axvline(params["x0"], linewidth=0.3)
 
@@ -270,5 +262,18 @@ class Shot:
             ver.invert_xaxis()
             ver.invert_yaxis()
             ver.get_yaxis().set_visible(False)
+
+            try:
+                image.contour(
+                    self.twoD_gaussian.eval(x=x, y=y).reshape(self.shape),
+                    levels=self.contour_levels,
+                    cmap="magma",
+                    linewidths=1,
+                    norm=color_norm,
+                )
+            except ValueError:
+                logging.error(
+                    "Plotting contour levels failed. Likely because no clear gaussian."
+                )
 
         return fig
