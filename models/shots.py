@@ -159,6 +159,17 @@ class Shot:
         return array
 
     @cachedproperty
+    def slice_coordinates(self):
+        params = self.twoD_gaussian.best_values
+        x0 = params["x0"]
+        y0 = params["y0"]
+        m = np.tan(params["theta"])
+        return (
+            ([0, self.shape[1]], [y0 + m * x0, y0 - m * (self.shape[1] - x0)]),
+            ([x0 - m * y0, x0 + m * (self.shape[0] - y0)], [0, self.shape[0]]),
+        )
+
+    @cachedproperty
     def best_fit_lines(self):
         """Gets the absorption values across the horizontal/vertical lines (no theta) of the 2D
         Gaussian fit."""
@@ -237,12 +248,13 @@ class Shot:
 
         if kw.get("fit", True):
             x, y = self.meshgrid
-            params = self.twoD_gaussian.best_values
             h, v = self.best_fit_lines
             hfit, vfit = self.oneD_gaussians
 
-            image.axhline(params["y0"], linewidth=0.3)
-            image.axvline(params["x0"], linewidth=0.3)
+            image.plot(*self.slice_coordinates[0], "-", linewidth=0.3)
+            image.plot(*self.slice_coordinates[1], "-", linewidth=0.3)
+            image.set_xlim([0, self.shape[1]])
+            image.set_ylim([self.shape[0], 0])
 
             h_x = np.arange(h.shape[0])
             h_y = hfit.eval(x=h_x)
