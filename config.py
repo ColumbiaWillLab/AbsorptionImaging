@@ -16,7 +16,7 @@ class Config(configparser.ConfigParser):
     def save(self):
         """Save current state to file."""
         with open(self.filename, "w") as configfile:
-            self.write(configfile)
+            self.write(configfile, space_around_delimiters=False)
 
     @property
     def pixel_size(self):
