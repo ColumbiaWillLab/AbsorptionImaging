@@ -8,7 +8,8 @@ from queues import event_queue
 from models import shots, time_of_flight
 
 from gui.logs import LogTextBox, queue_handler
-from gui.plots import MplFigure, FitParams, TemperatureParams, PlotSettings, ShotList
+from gui.controls import FitParams, TemperatureParams, PlotSettings
+from gui.plots import MplFigure, ShotList
 
 
 class Application(ttk.Frame):
