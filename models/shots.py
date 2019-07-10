@@ -13,6 +13,7 @@ from lmfit import Model
 from lmfit.models import GaussianModel, ConstantModel
 
 from fitting.utils import ravel, gaussian_2D
+from utils.geometry import clipped_endpoints
 
 from config import config
 
@@ -161,57 +162,36 @@ class Shot:
     @cachedproperty
     def slice_coordinates(self):
         params = self.twoD_gaussian.best_values
-        x0 = params["x0"]
-        y0 = params["y0"]
+        x_c = params["x0"]
+        y_c = params["y0"]
         m = np.tan(params["theta"])
-        return (
-            ([0, self.shape[1]], [y0 + m * x0, y0 - m * (self.shape[1] - x0)]),
-            ([x0 - m * y0, x0 + m * (self.shape[0] - y0)], [0, self.shape[0]]),
-        )
+
+        x0_h, y0_h = clipped_endpoints(0, x_c, y_c, m, self.shape[0])
+        x1_h, y1_h = clipped_endpoints(self.shape[1], x_c, y_c, m, self.shape[0])
+
+        y0_v, x0_v = clipped_endpoints(0, y_c, x_c, -m, self.shape[1])
+        y1_v, x1_v = clipped_endpoints(self.shape[0], y_c, x_c, -m, self.shape[1])
+
+        return ((x0_h, x1_h), (y0_h, y1_h)), ((x0_v, x1_v), (y0_v, y1_v))
 
     @cachedproperty
     def best_fit_lines(self):
         """Gets the absorption values across the horizontal/vertical lines (no theta) of the 2D
         Gaussian fit."""
-        bp_2D = self.twoD_gaussian.best_values
-        h_data = self.absorption_raw[np.rint(bp_2D["y0"]).astype("int32"), :]
-        v_data = self.absorption_raw[:, np.rint(bp_2D["x0"]).astype("int32")]
-        return h_data, v_data
-
-    @cachedproperty
-    def oneD_gaussians(self):
-        """Returns a tuple of (hor, ver) 1D Gaussian ModelResult across the 2D best fit lines."""
-        bp_2D = self.twoD_gaussian.best_values
-        h_data, v_data = self.best_fit_lines
-
-        model = GaussianModel() + ConstantModel()
-        model.set_param_hint(
-            "amplitude",
-            min=bp_2D["A"] * min(bp_2D["sx"], bp_2D["sy"]) * np.sqrt(2 * np.pi) * 0.5,
-            max=bp_2D["A"] * max(bp_2D["sx"], bp_2D["sy"]) * np.sqrt(2 * np.pi) * 1.5,
-        )  # GaussianModel is normalized, assume value lies between 50% and 150% of 2D fit results
-        model.set_param_hint("center", min=0, max=np.max(self.shape))
-        model.set_param_hint("sigma", min=0, max=np.max(self.shape))
-        model.set_param_hint("c", value=0, min=-0.1, max=0.3)
-
-        h_result = model.fit(
-            h_data,
-            x=np.arange(h_data.shape[0]),
-            amplitude=bp_2D["A"] * bp_2D["sx"] * np.sqrt(2 * np.pi),
-            center=bp_2D["x0"],
-            sigma=bp_2D["sx"],
+        (x_h, y_h), (x_v, y_v) = self.slice_coordinates
+        h_length = int(np.hypot(x_h[1] - x_h[0], y_h[1] - y_h[0]))
+        v_length = int(np.hypot(x_v[1] - x_v[0], y_v[1] - y_v[0]))
+        xs_h, ys_h = (
+            np.linspace(min(x_h), max(x_h), h_length, endpoint=False),
+            np.linspace(min(y_h), max(y_h), h_length, endpoint=False),
         )
-        logging.debug(h_result.fit_report())
-        v_result = model.fit(
-            v_data,
-            x=np.arange(v_data.shape[0]),
-            amplitude=bp_2D["A"] * bp_2D["sy"] * np.sqrt(2 * np.pi),
-            center=bp_2D["y0"],
-            sigma=bp_2D["sy"],
+        xs_v, ys_v = (
+            np.linspace(min(x_v), max(x_v), v_length, endpoint=False),
+            np.linspace(min(y_v), max(y_v), v_length, endpoint=False),
         )
-        logging.debug(v_result.fit_report())
-
-        return h_result, v_result
+        h_data = self.absorption_raw[ys_h.astype("int"), xs_h.astype("int")]
+        v_data = self.absorption_raw[ys_v.astype("int"), xs_v.astype("int")]
+        return (xs_h, ys_h, h_data), (xs_v, ys_v, v_data)
 
     @cachedproperty
     def atom_number(self):
@@ -231,7 +211,6 @@ class Shot:
         self.transmission_roi
         if fit:
             self.twoD_gaussian
-            self.oneD_gaussians
             self.atom_number
         return True
 
@@ -248,27 +227,28 @@ class Shot:
 
         if kw.get("fit", True):
             x, y = self.meshgrid
-            h, v = self.best_fit_lines
-            hfit, vfit = self.oneD_gaussians
+            (xs_h, ys_h, z_h), (xs_v, ys_v, z_v) = self.best_fit_lines
 
             image.plot(*self.slice_coordinates[0], "-", linewidth=0.3)
             image.plot(*self.slice_coordinates[1], "-", linewidth=0.3)
+
+            # These plots are already clipped, but this gets rid of the extra padding
             image.set_xlim([0, self.shape[1]])
             image.set_ylim([self.shape[0], 0])
 
-            h_x = np.arange(h.shape[0])
-            h_y = hfit.eval(x=h_x)
-            v_y = np.arange(v.shape[0])
-            v_x = vfit.eval(x=v_y)
+            h_x = np.arange(z_h.shape[0])
+            h_y = self.twoD_gaussian.eval(x=xs_h, y=ys_h)
+            v_y = np.arange(z_v.shape[0])
+            v_x = self.twoD_gaussian.eval(x=xs_v, y=ys_v)
 
             hor = fig.add_subplot(gs[0, 1])
-            hor.plot(h_x, h, "ko", markersize=0.2)
+            hor.plot(h_x, z_h, "ko", markersize=0.2)
             hor.plot(h_x, h_y, "r", linewidth=0.5)
             hor.set_ylim(*norm)
             hor.get_xaxis().set_visible(False)
 
             ver = fig.add_subplot(gs[1, 0])
-            ver.plot(v, v_y, "ko", markersize=0.2)
+            ver.plot(z_v, v_y, "ko", markersize=0.2)
             ver.plot(v_x, v_y, "r", linewidth=0.5)
             ver.set_xlim(*norm)
             ver.invert_xaxis()
