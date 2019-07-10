@@ -205,7 +205,7 @@ class Shot:
 
         data = self.transmission[self.sigma_mask]
         density = -np.log(data, where=data > 0)
-        return (area / sigma) * np.sum(density)
+        return (area / sigma) * np.sum(density) / 0.866  # Divide by 1.5-sigma area
 
     def warm_cache(self, fit=True):
         self.transmission_roi
