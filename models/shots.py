@@ -148,15 +148,17 @@ class Shot:
     @cachedproperty
     def sigma_mask(self):
         """Returns a numpy mask of pixels within the 2-sigma limit of the model (no ROI)"""
-        # TODO: assumes independence, needs covar matrix
         bp_2D = self.twoD_gaussian.best_values
-        x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
-        y, x = np.ogrid[-y0 : self.height - y0, -x0 : self.width - x0]
-        mask = np.square(x) / np.square(sx) + np.square(y) / np.square(sy) <= chi2.ppf(
-            0.866, df=2
-        )
+        x0, y0, a, b, theta = (bp_2D[k] for k in ("x0", "y0", "sx", "sy", "theta"))
+        y, x = np.ogrid[0 : self.height, 0 : self.width]
+
+        # https://math.stackexchange.com/a/434482
+        maj_axis = np.square((x - x0) * np.cos(theta) - (y - y0) * np.sin(theta))
+        min_axis = np.square((x - x0) * np.sin(theta) + (y - y0) * np.cos(theta))
+        bound = chi2.ppf(0.886, df=2)
+
         array = np.zeros(self.shape, dtype="bool")
-        array[mask] = True
+        array[maj_axis / np.square(a) + min_axis / np.square(b) <= bound] = True
         return array
 
     @cachedproperty
