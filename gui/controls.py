@@ -19,19 +19,14 @@ class FitParams(ttk.Frame):
         self.fit_params = []
         self.config_params = {}
 
-        p_idx = 0
-        for section in ("camera", "beam"):
-            for key in config[section].keys():
-                text = key.replace("_", " ").capitalize()
-                ttk.Label(self, text=text).grid(row=p_idx, column=0)
-                entry = FloatEntry(self, state="normal")
-                entry.grid(row=p_idx, column=1)
-                entry.insert(0, config[section].getfloat(key))
-                self.config_params[f"{section}.{key}"] = entry
-                p_idx += 1
+        labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
+        for l_idx, lbl in enumerate(labels):
+            ttk.Label(self, text=lbl).grid(row=l_idx, column=0)
 
-        save = ttk.Button(self, text="Save", command=self._save_config)
-        save.grid(row=p_idx, column=1)
+        for f_idx in range(8):
+            entry = ttk.Entry(self, state="readonly")
+            entry.grid(row=f_idx, column=1)
+            self.fit_params.append(entry)
 
         self.fixtheta = tk.BooleanVar()
         self.fixtheta.set(config.fix_theta)
@@ -41,22 +36,13 @@ class FitParams(ttk.Frame):
             variable=self.fixtheta,
             command=self._toggle_fixtheta,
         )
-        fixtheta_btn.grid(row=p_idx + 1, column=1)
+        fixtheta_btn.grid(row=f_idx - 1, column=2, padx=25)
         self.fitvar = tk.BooleanVar()
         self.fitvar.set(config.fit)
         fitbtn = ttk.Checkbutton(
             self, text="Enable Fitting", variable=self.fitvar, command=self._toggle_fit
         )
-        fitbtn.grid(row=p_idx + 2, column=1)
-
-        labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
-        for l_idx, lbl in enumerate(labels):
-            ttk.Label(self, text=lbl).grid(row=l_idx, column=2)
-
-        for f_idx in range(8):
-            entry = ttk.Entry(self, state="readonly")
-            entry.grid(row=f_idx, column=3)
-            self.fit_params.append(entry)
+        fitbtn.grid(row=f_idx, column=2, padx=25)
 
     @property
     def keys(self):
@@ -81,13 +67,6 @@ class FitParams(ttk.Frame):
             entry.configure(state="normal")
             entry.delete(0, "end")
             entry.configure(state="readonly")
-
-    def _save_config(self):
-        for name, entry in self.config_params.items():
-            section, key = name.split(".")
-            config[section][key] = str(entry.get())
-
-        config.save()
 
     def _toggle_fixtheta(self):
         config["fit"]["fix_theta"] = str(self.fixtheta.get())
@@ -201,6 +180,33 @@ class TemperatureParams(ttk.Frame):
             entry.delete(0, "end")
             entry.insert(0, "{:.4g}".format(value))
             entry.configure(state="readonly")
+
+
+class ExperimentParams(ttk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.master = master
+        self.config_params = {}
+
+        p_idx = 0
+        for section in ("camera", "beam"):
+            for key in config[section].keys():
+                text = key.replace("_", " ").capitalize()
+                ttk.Label(self, text=text).grid(row=p_idx, column=0)
+                entry = FloatEntry(self, state="normal")
+                entry.grid(row=p_idx, column=1)
+                entry.insert(0, config[section].getfloat(key))
+                self.config_params[f"{section}.{key}"] = entry
+                p_idx += 1
+
+        save = ttk.Button(self, text="Save", command=self._save_config)
+        save.grid(row=p_idx, column=1)
+
+    def _save_config(self):
+        for name, entry in self.config_params.items():
+            section, key = name.split(".")
+            config[section][key] = str(entry.get())
+        config.save()
 
 
 class PlotSettings(ttk.Frame):

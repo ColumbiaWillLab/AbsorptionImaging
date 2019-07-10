@@ -8,7 +8,7 @@ from queues import event_queue
 from models import shots, time_of_flight
 
 from gui.logs import LogTextBox, queue_handler
-from gui.controls import FitParams, TemperatureParams, PlotSettings
+from gui.controls import FitParams, TemperatureParams, ExperimentParams, PlotSettings
 from gui.plots import MplFigure, ShotList
 
 
@@ -34,9 +34,11 @@ class Application(ttk.Frame):
         tabs = ttk.Notebook(self)
         fp = FitParams(tabs)
         temp = TemperatureParams(tabs)
+        exp = ExperimentParams(tabs)
         settings = PlotSettings(tabs)
         tabs.add(fp, text="Gaussian")
         tabs.add(temp, text="Temperature")
+        tabs.add(exp, text="Experiment Settings")
         tabs.add(settings, text="Plot Settings")
         tabs.grid(row=0, column=0)
         self.fit_params = fp
