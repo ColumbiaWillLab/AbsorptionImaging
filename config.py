@@ -12,6 +12,7 @@ class Config(configparser.ConfigParser):
 
         # Non-persistent attributes
         self.fit = True
+        self.roi_enabled = False
 
     def save(self):
         """Save current state to file."""
@@ -64,6 +65,17 @@ class Config(configparser.ConfigParser):
     @property
     def fix_theta(self):
         return self.getboolean("fit", "fix_theta")
+
+    @property
+    def roi(self):
+        try:
+            return tuple(map(int, self.get("fit", "roi").split(",")))
+        except (ValueError, configparser.NoOptionError):
+            return None
+
+    @roi.setter
+    def roi(self, tup):
+        self["fit"]["roi"] = ",".join(map(str, tup))
 
 
 config = Config("config.ini")

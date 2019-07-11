@@ -31,21 +31,55 @@ class FitParams(ttk.Frame):
             entry.grid(row=f_idx, column=1)
             self.fit_params[keys[f_idx]] = entry
 
+        options_frame = ttk.Frame(self)
+        options_frame.pack(side="left", fill="y", expand=True)
+
+        roi_frame = ttk.LabelFrame(options_frame, text="ROI")
+        roi_frame.pack(fill="x", expand=True)
+        ttk.Label(roi_frame, text="X").grid(row=0, column=1)
+        ttk.Label(roi_frame, text="Y").grid(row=0, column=2)
+
+        ttk.Label(roi_frame, text="Top Left").grid(row=1, column=0)
+        self.roi_tl_x = FloatEntry(roi_frame, width=4)
+        self.roi_tl_y = FloatEntry(roi_frame, width=4)
+        self.roi_tl_x.grid(row=1, column=1)
+        self.roi_tl_y.grid(row=1, column=2)
+
+        ttk.Label(roi_frame, text="Bottom Right").grid(row=2, column=0)
+        self.roi_br_x = FloatEntry(roi_frame, width=4)
+        self.roi_br_y = FloatEntry(roi_frame, width=4)
+        self.roi_br_x.grid(row=2, column=1)
+        self.roi_br_y.grid(row=2, column=2)
+
+        self.roi_entries = [self.roi_tl_x, self.roi_tl_y, self.roi_br_x, self.roi_br_y]
+        if config.roi:
+            for i, entry in enumerate(self.roi_entries):
+                entry.delete(0, "end")
+                entry.insert(0, config.roi[i])
+
+        self.toggle_roi = ttk.Button(roi_frame, text="Enable", command=self._toggle_roi)
+        self.toggle_roi.grid(row=3, column=1, columnspan=2)
+
+        fit_frame = ttk.LabelFrame(options_frame, text="Fit")
+        fit_frame.pack(fill="x", expand=True)
         self.fixtheta = tk.BooleanVar()
         self.fixtheta.set(config.fix_theta)
         fixtheta_btn = ttk.Checkbutton(
-            self,
+            fit_frame,
             text="Fix Theta",
             variable=self.fixtheta,
             command=self._toggle_fixtheta,
         )
-        fixtheta_btn.grid(row=f_idx - 1, column=2, padx=25)
+        fixtheta_btn.grid(row=0, column=0, sticky="w")
         self.fitvar = tk.BooleanVar()
         self.fitvar.set(config.fit)
         fitbtn = ttk.Checkbutton(
-            self, text="Enable Fitting", variable=self.fitvar, command=self._toggle_fit
+            fit_frame,
+            text="Enable Fitting",
+            variable=self.fitvar,
+            command=self._toggle_fit,
         )
-        fitbtn.grid(row=f_idx, column=2, padx=25)
+        fitbtn.grid(row=1, column=0, sticky="w")
 
     @property
     def keys(self):
@@ -75,6 +109,22 @@ class FitParams(ttk.Frame):
 
     def _toggle_fit(self):
         config.fit = self.fitvar.get()
+
+    def _toggle_roi(self):
+        if config.roi_enabled == False:
+            try:
+                roi = tuple(int(v.get()) for v in self.roi_entries)
+            except ValueError:
+                return
+
+            if roi[0] < roi[2] and roi[1] < roi[3]:
+                config.roi_enabled = True
+                config.roi = roi
+                config.save()
+                self.toggle_roi.configure(text="Disable", state="active")
+        else:
+            config.roi_enabled = False
+            self.toggle_roi.configure(text="Enable", state="normal")
 
 
 class TemperatureParams(ttk.Frame):

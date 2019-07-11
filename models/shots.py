@@ -5,6 +5,7 @@ import imageio
 import numpy as np
 import matplotlib.colors as colors
 import matplotlib.gridspec as gridspec
+import matplotlib.patches as patches
 
 from boltons.cacheutils import cachedproperty
 from scipy.stats.distributions import chi2
@@ -39,11 +40,14 @@ class Shot:
         """Pixel width of each BMP"""
         return self.shape[1]
 
-    @cachedproperty
-    def meshgrid(self):
+    def meshgrid(self, roi=False):
         """Returns a meshgrid with the whole image dimensions. The meshgrid is an (x, y) tuple of
         numpy matrices whose pairs reference every coordinate in the image."""
-        y, x = np.mgrid[: self.height, : self.width]  # mgrid is reverse of meshgrid
+        if roi and config.roi_enabled and config.roi:
+            x0, y0, x1, y1 = config.roi
+            y, x = np.mgrid[y0:y1, x0:x1]
+        else:
+            y, x = np.mgrid[: self.height, : self.width]  # mgrid is reverse of meshgrid
         return x, y
 
     @cachedproperty
@@ -86,18 +90,27 @@ class Shot:
     @cachedproperty
     def transmission_roi(self):
         """Transmission pixel matrix bounded by the region of interest."""
-        return self.transmission
+        if config.roi_enabled and config.roi:
+            x0, y0, x1, y1 = config.roi
+            return self.transmission[y0:y1, x0:x1]
+        else:
+            return self.transmission
 
     @cachedproperty
     def absorption_roi(self):
         """Absorption pixel matrix bounded by the region of interest."""
-        return self.absorption
+        return 1 - self.transmission_roi
 
     @cachedproperty
     def peak(self):
         """Returns x, y, z of brightest pixel in absorption ROI"""
-        y, x = np.unravel_index(np.argmax(self.absorption_roi), self.shape)
+        y, x = np.unravel_index(
+            np.argmax(self.absorption_roi), self.absorption_roi.shape
+        )
         z = self.absorption_roi[y, x]
+        if config.roi_enabled and config.roi:
+            x += config.roi[0]
+            y += config.roi[1]
         logging.info("Finding transmission peak - x: %i, y: %i, z: %i", x, y, z)
         return x, y, z
 
@@ -105,13 +118,20 @@ class Shot:
     def twoD_gaussian(self):
         """Returns an LMFIT ModelResult of the 2D Gaussian for absorption ROI"""
         logging.info("Running 2D fit")
-        x, y = self.meshgrid
+        x, y = self.meshgrid(roi=False)
         x0, y0, A = self.peak
 
         model = Model(ravel(gaussian_2D), independent_vars=["x", "y"])
         model.set_param_hint("A", value=A, min=0, max=2)
-        model.set_param_hint("x0", value=x0, min=0, max=self.width)
-        model.set_param_hint("y0", value=y0, min=0, max=self.height)
+
+        if config.roi_enabled and config.roi:
+            x0, y0, x1, y1 = config.roi
+            model.set_param_hint("x0", value=x0, min=x0, max=x1)
+            model.set_param_hint("y0", value=y0, min=y0, max=y1)
+        else:
+            model.set_param_hint("x0", value=x0, min=0, max=self.width)
+            model.set_param_hint("y0", value=y0, min=0, max=self.height)
+
         model.set_param_hint("sx", min=1, max=self.width)
         model.set_param_hint("sy", min=1, max=self.height)
         model.set_param_hint(
@@ -120,7 +140,7 @@ class Shot:
         model.set_param_hint("z0", min=-1, max=1)
 
         result = model.fit(
-            np.ravel(self.absorption_roi[::5]),
+            np.ravel(self.absorption[::5]),
             x=x[::5],
             y=y[::5],
             sx=100,
@@ -205,7 +225,11 @@ class Shot:
         )  # off resonance
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
-        data = self.transmission[self.sigma_mask]
+        if "twoD_gaussian" in self.__dict__:
+            data = self.transmission[self.sigma_mask]
+        else:
+            data = self.transmission
+
         density = -np.log(data, where=data > 0)
         return (area / sigma) * np.sum(density) / 0.866  # Divide by 1.5-sigma area
 
@@ -227,8 +251,15 @@ class Shot:
         image = fig.add_subplot(gs[1, 1])
         image.imshow(self.absorption_raw, cmap=config.colormap, norm=color_norm)
 
+        if config.roi_enabled and config.roi:
+            x0, y0, x1, y1 = config.roi
+            roi = patches.Rectangle(
+                (x0, y0), x1 - x0, y1 - y0, linewidth=1, edgecolor="r", facecolor="none"
+            )
+            image.add_patch(roi)
+
         if kw.get("fit", True):
-            x, y = self.meshgrid
+            x, y = self.meshgrid(roi=False)
             (xs_h, ys_h, z_h), (xs_v, ys_v, z_v) = self.best_fit_lines
 
             image.plot(*self.slice_coordinates[0], "-", linewidth=0.3)
