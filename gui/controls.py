@@ -16,17 +16,20 @@ class FitParams(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
-        self.fit_params = []
+        self.fit_params = {}
         self.config_params = {}
 
+        params_frame = ttk.Frame(self)
+        params_frame.pack(side="left", fill="y", expand=True)
+        keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
         labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
         for l_idx, lbl in enumerate(labels):
-            ttk.Label(self, text=lbl).grid(row=l_idx, column=0)
+            ttk.Label(params_frame, text=lbl).grid(row=l_idx, column=0)
 
         for f_idx in range(8):
-            entry = ttk.Entry(self, state="readonly")
+            entry = ttk.Entry(params_frame, state="readonly")
             entry.grid(row=f_idx, column=1)
-            self.fit_params.append(entry)
+            self.fit_params[keys[f_idx]] = entry
 
         self.fixtheta = tk.BooleanVar()
         self.fixtheta.set(config.fix_theta)
@@ -49,21 +52,19 @@ class FitParams(ttk.Frame):
         return ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
 
     def display(self, fit_params):
-        for i, k in enumerate(self.keys):
-            p = fit_params[k]
+        for k, v in fit_params.items():
             if k in ["x0", "y0", "sx", "sy"]:
-                p *= config.pixel_size
+                v *= config.pixel_size
             elif k == "theta":
-                p = np.degrees(p)
-            entry = self.fit_params[i]
+                v = np.degrees(v)
+            entry = self.fit_params[k]
             entry.configure(state="normal")
             entry.delete(0, "end")
-            entry.insert(0, "{:.4g}".format(p))
+            entry.insert(0, "{:.4g}".format(v))
             entry.configure(state="readonly")
 
     def clear(self):
-        for i, _ in enumerate(self.keys):
-            entry = self.fit_params[i]
+        for entry in self.fit_params.values():
             entry.configure(state="normal")
             entry.delete(0, "end")
             entry.configure(state="readonly")
