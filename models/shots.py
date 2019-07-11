@@ -225,10 +225,13 @@ class Shot:
         )  # off resonance
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
-        if "twoD_gaussian" in self.__dict__:
-            data = self.transmission[self.sigma_mask]
+        if config.roi_enabled and config.roi:
+            data = self.transmission_roi
         else:
-            data = self.transmission
+            if "twoD_gaussian" in self.__dict__:
+                data = self.transmission[self.sigma_mask]
+            else:
+                data = self.transmission
 
         density = -np.log(data, where=data > 0)
         return (area / sigma) * np.sum(density) / 0.866  # Divide by 1.5-sigma area
