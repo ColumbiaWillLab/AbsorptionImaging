@@ -26,7 +26,7 @@ class Config(configparser.ConfigParser):
 
     @property
     def magnification(self):
-        """Imaging beam magnification ratio through optical path to camera"""
+        """Imaging beam magnification ratio through optical path to camera."""
         return self.getfloat("beam", "magnification")
 
     @property
@@ -41,33 +41,37 @@ class Config(configparser.ConfigParser):
 
     @property
     def detuning(self):
-        """Imaging beam detuning in angular MHz"""
+        """Imaging beam detuning in angular MHz."""
         return self.getfloat("beam", "detuning") * 2 * np.pi
 
     @property
     def linewidth(self):
-        """Imaging beam linewidth in angular MHz"""
+        """Imaging beam linewidth in angular MHz."""
         return self.getfloat("beam", "linewidth") * 2 * np.pi
 
     @property
     def colormap(self):
-        """Numpy colormap name"""
+        """Numpy colormap name."""
         return self.get("plot", "colormap")
 
     @property
     def repump_time(self):
+        """Repump time in ms."""
         return self.getfloat("atoms", "repump_time")
 
     @property
     def atom_mass(self):
+        """Atom mass in kg."""
         return self.getfloat("atoms", "mass")
 
     @property
     def fix_theta(self):
+        """If True, 2D Gaussian fit restricts theta to 0 (hor/ver)."""
         return self.getboolean("fit", "fix_theta")
 
     @property
     def roi(self):
+        """Tuple of (x0, y0, x1, y1) defining the region of interest for fitting."""
         try:
             return tuple(map(int, self.get("fit", "roi").split(",")))
         except (ValueError, configparser.NoOptionError):
@@ -76,6 +80,18 @@ class Config(configparser.ConfigParser):
     @roi.setter
     def roi(self, tup):
         self["fit"]["roi"] = ",".join(map(str, tup))
+
+    @property
+    def tof(self):
+        """List of time of flight shot times in ms for temperature fitting."""
+        try:
+            return list(map(float, self.get("fit", "tof").split(",")))
+        except (ValueError, configparser.NoOptionError):
+            return None
+
+    @tof.setter
+    def tof(self, arr):
+        self["fit"]["tof"] = ",".join(map(str, arr))
 
 
 config = Config("config.ini")

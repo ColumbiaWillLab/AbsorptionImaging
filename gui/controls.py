@@ -140,7 +140,10 @@ class TemperatureParams(ttk.Frame):
 
         st = tkst.ScrolledText(left_frame, state="normal", height=12, width=10)
         st.pack()
-        st.insert("1.0", "0.25\n0.5\n0.75\n1\n1.25\n1.5\n1.75\n2\n2.25\n2.5")
+        if config.tof:
+            st.insert("1.0", "\n".join(map(str, config.tof)))
+        else:
+            st.insert("1.0", "0.25\n0.5\n0.75\n1\n1.25\n1.5\n1.75\n2\n2.25\n2.5")
 
         btn = ttk.Button(left_frame, text="Run", command=self.run)
         btn.pack()
@@ -212,9 +215,12 @@ class TemperatureParams(ttk.Frame):
             vals = [float(x) for x in self.st.get("1.0", "end-1c").split()]
             if not all(x >= 0 and isfinite(x) for x in vals):
                 raise ValueError
+
+            observer.start_tof(vals)
+            config.tof = vals
+            config.save()
         except ValueError:
             tk.messagebox.showerror("Temperature Fitting Alert", "Invalid Entry!")
-        observer.start_tof(vals)
 
     def display(self, tof):
         atom_n_mean = np.mean(tof.atom_number)
