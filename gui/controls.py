@@ -1,3 +1,5 @@
+import logging
+
 from math import isfinite
 
 import tkinter as tk
@@ -19,6 +21,7 @@ class FitParams(ttk.Frame):
         self.fit_params = {}
         self.config_params = {}
 
+        # Fit Parameters (uneditable)
         params_frame = ttk.Frame(self)
         params_frame.pack(side="left", fill="y", expand=True)
         keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
@@ -34,6 +37,7 @@ class FitParams(ttk.Frame):
         options_frame = ttk.Frame(self)
         options_frame.pack(side="left", fill="y", expand=True)
 
+        # Region of Interest Control
         roi_frame = ttk.LabelFrame(options_frame, text="ROI")
         roi_frame.pack(fill="x", expand=True)
         ttk.Label(roi_frame, text="X").grid(row=0, column=1)
@@ -52,6 +56,8 @@ class FitParams(ttk.Frame):
         self.roi_br_y.grid(row=2, column=2)
 
         self.roi_entries = [self.roi_tl_x, self.roi_tl_y, self.roi_br_x, self.roi_br_y]
+        for entry in self.roi_entries:
+            entry.bind("<Return>", self._update_roi)
         if config.roi:
             for i, entry in enumerate(self.roi_entries):
                 entry.delete(0, "end")
@@ -110,18 +116,27 @@ class FitParams(ttk.Frame):
     def _toggle_fit(self):
         config.fit = self.fitvar.get()
 
-    def _toggle_roi(self):
-        if config.roi_enabled == False:
-            try:
-                roi = tuple(int(v.get()) for v in self.roi_entries)
-            except ValueError:
-                return
+    def _update_roi(self, event=None):
+        try:
+            roi = tuple(int(v.get()) for v in self.roi_entries)
+        except ValueError:
+            logging.error("Malformed ROI params!")
+            return False
 
-            if roi[0] < roi[2] and roi[1] < roi[3]:
+        if roi[0] < roi[2] and roi[1] < roi[3]:
+            config.roi = roi
+            config.save()
+            logging.info("Updated region of interest: %s", str(roi))
+            return True
+        else:
+            logging.warning("Invalid ROI params!")
+
+    def _toggle_roi(self):
+        if not config.roi_enabled:
+            if self._update_roi():
                 config.roi_enabled = True
-                config.roi = roi
-                config.save()
                 self.toggle_roi.configure(text="Disable", state="active")
+                logging.debug("ROI enabled")
         else:
             config.roi_enabled = False
             self.toggle_roi.configure(text="Enable", state="normal")
