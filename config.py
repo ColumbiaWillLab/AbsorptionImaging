@@ -13,6 +13,7 @@ class Config(configparser.ConfigParser):
         # Non-persistent attributes
         self.fit = True
         self.roi_enabled = False
+        self.fix_center = False
 
     def save(self):
         """Save current state to file."""
@@ -92,6 +93,18 @@ class Config(configparser.ConfigParser):
     @tof.setter
     def tof(self, arr):
         self["fit"]["tof"] = ",".join(map(str, arr))
+
+    @property
+    def center(self):
+        """Tuple of (x, y) - 2D Gaussian fit restricted to this center point."""
+        try:
+            return tuple(map(float, self.get("fit", "center").split(",")))
+        except (ValueError, configparser.NoOptionError):
+            return None
+
+    @center.setter
+    def center(self, tup):
+        self["fit"]["center"] = ",".join(map(str, tup))
 
 
 config = Config("config.ini")

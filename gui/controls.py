@@ -10,6 +10,7 @@ import numpy as np
 
 from config import config
 from watcher import observer
+from queues import shot_list
 
 from .components import FloatEntry
 
@@ -65,6 +66,41 @@ class FitParams(ttk.Frame):
 
         self.toggle_roi = ttk.Button(roi_frame, text="Enable", command=self._toggle_roi)
         self.toggle_roi.grid(row=3, column=1, columnspan=2)
+
+        # Center Control
+        self.fixcenter = tk.BooleanVar()
+        self.fixcenter.set(config.fix_center)
+        fixcenter_btn = ttk.Checkbutton(
+            roi_frame,
+            text="Fix Center",
+            variable=self.fixcenter,
+            command=self._toggle_center,
+        )
+        fixcenter_btn.grid(row=4, column=0, pady=(20, 0))
+
+        center_x_var = tk.DoubleVar()
+        self.center_x = FloatEntry(roi_frame, width=4, textvariable=center_x_var)
+        self.center_x.var = center_x_var
+
+        center_y_var = tk.DoubleVar()
+        self.center_y = FloatEntry(roi_frame, width=4, textvariable=center_y_var)
+        self.center_y.var = center_y_var
+
+        if config.center:
+            x, y = config.center
+            self.center_x.var.set(x)
+            self.center_y.var.set(y)
+
+        self.center_x.grid(row=4, column=1, pady=(20, 0))
+        self.center_y.grid(row=4, column=2, pady=(20, 0))
+
+        self.center_x.bind("<Return>", self._update_center)
+        self.center_y.bind("<Return>", self._update_center)
+
+        self.last_shot_center = ttk.Button(
+            roi_frame, text="Last Shot", command=self._fill_last_shot_center
+        )
+        self.last_shot_center.grid(row=5, column=1, columnspan=2)
 
         fit_frame = ttk.LabelFrame(options_frame, text="Fit")
         fit_frame.pack(fill="x", expand=True)
@@ -132,14 +168,47 @@ class FitParams(ttk.Frame):
             logging.warning("Invalid ROI params!")
 
     def _toggle_roi(self):
-        if not config.roi_enabled:
+        if config.roi_enabled:
+            config.roi_enabled = False
+            self.toggle_roi.configure(text="Enable", state="normal")
+            logging.debug("ROI disabled")
+        else:
             if self._update_roi():
                 config.roi_enabled = True
                 self.toggle_roi.configure(text="Disable", state="active")
                 logging.debug("ROI enabled")
-        else:
-            config.roi_enabled = False
-            self.toggle_roi.configure(text="Enable", state="normal")
+
+    def _update_center(self, event=None):
+        x, y = self.center_x.var.get(), self.center_y.var.get()
+        if not x or not y:
+            return False
+        try:
+            center = tuple((x, y))
+        except ValueError:
+            logging.error("Malformed center fix params!")
+            return False
+
+        config.center = center
+        config.save()
+        logging.info("Updated center fix: %s", str(center))
+        return True
+
+    def _toggle_center(self):
+        config.fix_center = self.fixcenter.get()
+        if config.fix_center:
+            self._update_center()
+
+    def _fill_last_shot_center(self):
+        try:
+            shot = shot_list[-1]
+            if "twoD_gaussian" in shot.__dict__:
+                self.center_x.var.set(shot.twoD_gaussian.best_values["x0"])
+                self.center_y.var.set(shot.twoD_gaussian.best_values["y0"])
+                self._update_center()
+            else:
+                logging.warning("Shot has no 2D Gaussian fit.")
+        except IndexError:
+            logging.error("No last shot to pull from!")
 
 
 class TemperatureParams(ttk.Frame):

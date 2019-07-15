@@ -1,12 +1,10 @@
-from collections import deque
-
 import tkinter.ttk as ttk
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from config import config
-from queues import event_queue
+from queues import event_queue, shot_list
 
 
 class MplFigure(object):
@@ -45,7 +43,7 @@ class ShotList(ttk.Treeview):
         self.heading("sigma_y", text="Std. Dev. Y")
 
         self.pack(fill="both", expand=True)
-        self.deque = deque(maxlen=5)
+        self.deque = shot_list
 
         self.bind("<Double-1>", self._on_double_click)
         self.bind("<Return>", self._on_return_keypress)

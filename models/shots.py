@@ -118,19 +118,34 @@ class Shot:
     def twoD_gaussian(self):
         """Returns an LMFIT ModelResult of the 2D Gaussian for absorption ROI"""
         logging.info("Running 2D fit")
-        x, y = self.meshgrid(roi=False)
-        x0, y0, A = self.peak
+        x_mg, y_mg = self.meshgrid(roi=False)
 
         model = Model(ravel(gaussian_2D), independent_vars=["x", "y"])
-        model.set_param_hint("A", value=A, min=0, max=2)
 
         if config.roi_enabled and config.roi:
             x0, y0, x1, y1 = config.roi
-            model.set_param_hint("x0", value=x0, min=x0, max=x1)
-            model.set_param_hint("y0", value=y0, min=y0, max=y1)
         else:
-            model.set_param_hint("x0", value=x0, min=0, max=self.width)
-            model.set_param_hint("y0", value=y0, min=0, max=self.height)
+            x0, y0, x1, y1 = 0, 0, self.width, self.height
+
+        x_c, y_c, A, vary_center = None, None, 0.5, True
+        if config.fix_center and config.center:
+            x, y = config.center
+            if x < x0 or x > x1 or y < y0 or y > y1:
+                logging.warning(
+                    "Center fix: %s is outside the ROI: %s. Ignoring center!",
+                    config.center,
+                    config.roi,
+                )
+            else:
+                x_c, y_c = config.center
+                vary_center = False
+
+        if not x_c and not y_c:
+            x_c, y_c, A = self.peak
+
+        model.set_param_hint("A", value=A, min=0, max=2)
+        model.set_param_hint("x0", value=x_c, min=x0, max=x1, vary=vary_center)
+        model.set_param_hint("y0", value=y_c, min=y0, max=y1, vary=vary_center)
 
         model.set_param_hint("sx", min=1, max=self.width)
         model.set_param_hint("sy", min=1, max=self.height)
@@ -141,8 +156,8 @@ class Shot:
 
         result = model.fit(
             np.ravel(self.absorption[::5]),
-            x=x[::5],
-            y=y[::5],
+            x=x_mg[::5],
+            y=y_mg[::5],
             sx=100,
             sy=100,
             theta=0,

@@ -1,3 +1,4 @@
+import platform
 import signal
 import tkinter as tk
 
@@ -123,8 +124,12 @@ def start(threads):
 
     app = Application(root, threads)
 
-    default_font = font.nametofont("TkTextFont")
-    default_font.configure(size=18)
+    if platform.system() == "Darwin":
+        default_font = font.nametofont("TkTextFont")
+        default_font.configure(size=18)
+    else:
+        default_font = font.nametofont("TkTextFont")
+        default_font.configure(size=14)
 
     menubar = tk.Menu(root)
     filemenu = tk.Menu(menubar, tearoff=0)
