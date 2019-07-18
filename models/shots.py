@@ -139,6 +139,8 @@ class Shot:
             else:
                 x_c, y_c = config.center
                 vary_center = False
+        elif config.roi_enabled and config.roi:
+            x_c, y_c = (x1 + x0) / 2, (y1 + y0) / 2
 
         if not x_c and not y_c:
             x_c, y_c, A = self.peak
