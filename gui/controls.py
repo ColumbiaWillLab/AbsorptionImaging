@@ -240,32 +240,40 @@ class TemperatureParams(ttk.Frame):
         rt_frame.grid(row=0, column=1)
 
         self.temp_entries = []
-        for i, text in enumerate(("X Temp.", "Y Temp.", "Avg. Temp")):
-            ttk.Label(rt_frame, text=text).grid(row=i, column=0)
-            ttk.Label(rt_frame, text="Std. Error").grid(row=i, column=2)
+        r = 0
+        ttk.Label(rt_frame, text="Temperature (µK)").grid(row=r, column=1)
+        ttk.Label(rt_frame, text="Std. Error (µK)").grid(row=r, column=2)
+        for i, text in enumerate(("X", "Y", "Avg.")):
+            r = i + 1
+            ttk.Label(rt_frame, text=text).grid(row=r, column=0)
+
             temp = ttk.Entry(rt_frame, state="readonly", width=10)
             err = ttk.Entry(rt_frame, state="readonly", width=10)
-            temp.grid(row=i, column=1)
-            err.grid(row=i, column=3)
+            temp.grid(row=r, column=1)
+            err.grid(row=r, column=2)
             self.temp_entries.append((temp, err))
 
-        ttk.Label(rt_frame, text="Mean Atom #").grid(row=i + 1, column=0)
-        atom_n_mean = ttk.Entry(rt_frame, state="readonly", width=10)
-        atom_n_mean.grid(row=i + 1, column=1)
+        r += 1
+        ttk.Label(rt_frame, text="Mean Atom #").grid(row=r, column=1, pady=((10, 0)))
+        ttk.Label(rt_frame, text="Coeff. Var. (%)").grid(
+            row=r, column=2, pady=((10, 0))
+        )
 
-        ttk.Label(rt_frame, text="Coeff. Var.").grid(row=i + 1, column=2)
+        r += 1
+        atom_n_mean = ttk.Entry(rt_frame, state="readonly", width=10)
+        atom_n_mean.grid(row=r, column=1)
         atom_n_cv = ttk.Entry(rt_frame, state="readonly", width=10)
-        atom_n_cv.grid(row=i + 1, column=3)
+        atom_n_cv.grid(row=r, column=2)
 
         self.atom_n_mean = atom_n_mean
         self.atom_n_cv = atom_n_cv
 
         # Right Bottom Frame (Config)
-        rb_frame = ttk.Frame(self)
-        rb_frame.grid(row=1, column=1)
+        rb_frame = ttk.LabelFrame(self)
+        rb_frame.grid(row=1, column=1, pady=(10, 0))
 
-        ttk.Label(rb_frame, text="Repump Time").grid(row=0, column=0)
-        ttk.Label(rb_frame, text="Mass").grid(row=1, column=0)
+        ttk.Label(rb_frame, text="Repump Time (ms)").grid(row=0, column=0)
+        ttk.Label(rb_frame, text="Mass (kg)").grid(row=1, column=0)
 
         repump_entry = FloatEntry(rb_frame, state="normal", width=10)
         repump_entry.insert(0, config.repump_time)
@@ -324,10 +332,16 @@ class ExperimentParams(ttk.Frame):
             for key in config[section].keys():
                 text = key.replace("_", " ").capitalize()
                 ttk.Label(self, text=text).grid(row=p_idx, column=0)
+
+                units = type(config).units.get(section, {}).get(key)
+                if units:
+                    ttk.Label(self, text=units).grid(row=p_idx, column=2)
+
                 entry = FloatEntry(self, state="normal")
                 entry.grid(row=p_idx, column=1)
                 entry.insert(0, config[section].getfloat(key))
                 self.config_params[f"{section}.{key}"] = entry
+
                 p_idx += 1
 
         save = ttk.Button(self, text="Save", command=self._save_config)

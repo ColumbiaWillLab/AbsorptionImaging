@@ -5,6 +5,16 @@ import numpy as np
 class Config(configparser.ConfigParser):
     """Holds configuration settings in a file using configparser"""
 
+    units = {
+        "camera": {"pixel_size": "mm"},
+        "beam": {
+            "wavelength": "nm",
+            "magnification": "x",
+            "detuning": "MHz",
+            "linewidth": "MHz",
+        },
+    }
+
     def __init__(self, filename):
         self.filename = filename
         super().__init__()
