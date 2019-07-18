@@ -239,36 +239,24 @@ class TemperatureParams(ttk.Frame):
         rt_frame = ttk.Frame(self)
         rt_frame.grid(row=0, column=1)
 
-        ttk.Label(rt_frame, text="X Temp.").grid(row=0, column=0)
-        ttk.Label(rt_frame, text="Y Temp.").grid(row=1, column=0)
+        self.temp_entries = []
+        for i, text in enumerate(("X Temp.", "Y Temp.", "Avg. Temp")):
+            ttk.Label(rt_frame, text=text).grid(row=i, column=0)
+            ttk.Label(rt_frame, text="Std. Error").grid(row=i, column=2)
+            temp = ttk.Entry(rt_frame, state="readonly", width=10)
+            err = ttk.Entry(rt_frame, state="readonly", width=10)
+            temp.grid(row=i, column=1)
+            err.grid(row=i, column=3)
+            self.temp_entries.append((temp, err))
 
-        x_temp_entry = ttk.Entry(rt_frame, state="readonly", width=10)
-        y_temp_entry = ttk.Entry(rt_frame, state="readonly", width=10)
-
-        x_temp_entry.grid(row=0, column=1)
-        y_temp_entry.grid(row=1, column=1)
-
-        ttk.Label(rt_frame, text="Std. Error").grid(row=0, column=2)
-        ttk.Label(rt_frame, text="Std. Error").grid(row=1, column=2)
-
-        x_temp_err = ttk.Entry(rt_frame, state="readonly", width=10)
-        y_temp_err = ttk.Entry(rt_frame, state="readonly", width=10)
-
-        x_temp_err.grid(row=0, column=3)
-        y_temp_err.grid(row=1, column=3)
-
-        ttk.Label(rt_frame, text="Mean Atom #").grid(row=2, column=0)
+        ttk.Label(rt_frame, text="Mean Atom #").grid(row=i + 1, column=0)
         atom_n_mean = ttk.Entry(rt_frame, state="readonly", width=10)
-        atom_n_mean.grid(row=2, column=1)
+        atom_n_mean.grid(row=i + 1, column=1)
 
-        ttk.Label(rt_frame, text="Coeff. Var.").grid(row=2, column=2)
+        ttk.Label(rt_frame, text="Coeff. Var.").grid(row=i + 1, column=2)
         atom_n_cv = ttk.Entry(rt_frame, state="readonly", width=10)
-        atom_n_cv.grid(row=2, column=3)
+        atom_n_cv.grid(row=i + 1, column=3)
 
-        self.x_temp_entry = x_temp_entry
-        self.y_temp_entry = y_temp_entry
-        self.x_temp_err = x_temp_err
-        self.y_temp_err = y_temp_err
         self.atom_n_mean = atom_n_mean
         self.atom_n_cv = atom_n_cv
 
@@ -309,10 +297,12 @@ class TemperatureParams(ttk.Frame):
     def display(self, tof):
         atom_n_mean = np.mean(tof.atom_number)
         pairs = [
-            (self.x_temp_entry, tof.x_temp),
-            (self.y_temp_entry, tof.y_temp),
-            (self.x_temp_err, tof.x_temp_err),
-            (self.y_temp_err, tof.y_temp_err),
+            (self.temp_entries[0][0], tof.x_temp),
+            (self.temp_entries[1][0], tof.y_temp),
+            (self.temp_entries[0][1], tof.x_temp_err),
+            (self.temp_entries[1][1], tof.y_temp_err),
+            (self.temp_entries[2][0], tof.avg_temp),
+            (self.temp_entries[2][1], tof.avg_temp_err),
             (self.atom_n_mean, atom_n_mean),
             (self.atom_n_cv, np.std(tof.atom_number) / atom_n_mean * 100),
         ]

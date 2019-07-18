@@ -61,6 +61,14 @@ class TimeOfFlight:
         return self.y_fit[4] * config.atom_mass / KB * 1e6
 
     @cachedproperty
+    def avg_temp(self):
+        return np.mean((self.x_temp, self.y_temp))
+
+    @cachedproperty
+    def avg_temp_err(self):
+        return 0.5 * np.sqrt(np.sum(np.square((self.x_temp_err, self.y_temp_err))))
+
+    @cachedproperty
     def atom_number(self):
         return [s.atom_number for s in self.shots]
 
