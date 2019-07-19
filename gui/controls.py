@@ -15,146 +15,35 @@ from queues import shot_list
 from .components import FloatEntry
 
 
-class FitParams(ttk.Frame):
+class RegionOfInterestControl(ttk.LabelFrame):
     def __init__(self, master):
-        super().__init__(master)
+        super().__init__(master, text="ROI")
         self.master = master
-        self.fit_params = {}
-        self.config_params = {}
+        ttk.Label(self, text="X").grid(row=0, column=1)
+        ttk.Label(self, text="Y").grid(row=0, column=2)
 
-        # Fit Parameters (uneditable)
-        params_frame = ttk.Frame(self)
-        params_frame.pack(side="left", fill="y", expand=True)
-        keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
-        labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
-        for l_idx, lbl in enumerate(labels):
-            ttk.Label(params_frame, text=lbl).grid(row=l_idx, column=0)
+        ttk.Label(self, text="Top Left").grid(row=1, column=0)
+        ttk.Label(self, text="Bottom Right").grid(row=2, column=0)
 
-        for f_idx in range(8):
-            entry = ttk.Entry(params_frame, state="readonly")
-            entry.grid(row=f_idx, column=1)
-            self.fit_params[keys[f_idx]] = entry
+        self.roi_entries = []  # x0, y0, x1, y1
+        for row in range(1, 2 + 1):
+            for col in range(1, 2 + 1):
+                var = tk.IntVar(None)
+                entry = FloatEntry(self, width=4, textvariable=var)
+                entry.var = var
+                entry.bind("<Return>", self._update_roi)
+                entry.grid(row=row, column=col)
+                self.roi_entries.append(entry)
 
-        options_frame = ttk.Frame(self)
-        options_frame.pack(side="left", fill="y", expand=True)
+                if config.roi:
+                    var.set(config.roi[(row - 1) * 2 + (col - 1)])
 
-        # Region of Interest Control
-        roi_frame = ttk.LabelFrame(options_frame, text="ROI")
-        roi_frame.pack(fill="x", expand=True)
-        ttk.Label(roi_frame, text="X").grid(row=0, column=1)
-        ttk.Label(roi_frame, text="Y").grid(row=0, column=2)
-
-        ttk.Label(roi_frame, text="Top Left").grid(row=1, column=0)
-        self.roi_tl_x = FloatEntry(roi_frame, width=4)
-        self.roi_tl_y = FloatEntry(roi_frame, width=4)
-        self.roi_tl_x.grid(row=1, column=1)
-        self.roi_tl_y.grid(row=1, column=2)
-
-        ttk.Label(roi_frame, text="Bottom Right").grid(row=2, column=0)
-        self.roi_br_x = FloatEntry(roi_frame, width=4)
-        self.roi_br_y = FloatEntry(roi_frame, width=4)
-        self.roi_br_x.grid(row=2, column=1)
-        self.roi_br_y.grid(row=2, column=2)
-
-        self.roi_entries = [self.roi_tl_x, self.roi_tl_y, self.roi_br_x, self.roi_br_y]
-        for entry in self.roi_entries:
-            entry.bind("<Return>", self._update_roi)
-        if config.roi:
-            for i, entry in enumerate(self.roi_entries):
-                entry.delete(0, "end")
-                entry.insert(0, config.roi[i])
-
-        self.toggle_roi = ttk.Button(roi_frame, text="Enable", command=self._toggle_roi)
+        self.toggle_roi = ttk.Button(self, text="Enable", command=self._toggle_roi)
         self.toggle_roi.grid(row=3, column=1, columnspan=2)
-
-        # Center Control
-        self.fixcenter = tk.BooleanVar()
-        self.fixcenter.set(config.fix_center)
-        fixcenter_btn = ttk.Checkbutton(
-            roi_frame,
-            text="Fix Center",
-            variable=self.fixcenter,
-            command=self._toggle_center,
-        )
-        fixcenter_btn.grid(row=4, column=0, pady=(20, 0))
-
-        center_x_var = tk.DoubleVar()
-        self.center_x = FloatEntry(roi_frame, width=4, textvariable=center_x_var)
-        self.center_x.var = center_x_var
-
-        center_y_var = tk.DoubleVar()
-        self.center_y = FloatEntry(roi_frame, width=4, textvariable=center_y_var)
-        self.center_y.var = center_y_var
-
-        if config.center:
-            x, y = config.center
-            self.center_x.var.set(x)
-            self.center_y.var.set(y)
-
-        self.center_x.grid(row=4, column=1, pady=(20, 0))
-        self.center_y.grid(row=4, column=2, pady=(20, 0))
-
-        self.center_x.bind("<Return>", self._update_center)
-        self.center_y.bind("<Return>", self._update_center)
-
-        self.last_shot_center = ttk.Button(
-            roi_frame, text="Last Shot", command=self._fill_last_shot_center
-        )
-        self.last_shot_center.grid(row=5, column=1, columnspan=2)
-
-        fit_frame = ttk.LabelFrame(options_frame, text="Fit")
-        fit_frame.pack(fill="x", expand=True)
-        self.fixtheta = tk.BooleanVar()
-        self.fixtheta.set(config.fix_theta)
-        fixtheta_btn = ttk.Checkbutton(
-            fit_frame,
-            text="Fix Theta",
-            variable=self.fixtheta,
-            command=self._toggle_fixtheta,
-        )
-        fixtheta_btn.grid(row=0, column=0, sticky="w")
-        self.fitvar = tk.BooleanVar()
-        self.fitvar.set(config.fit)
-        fitbtn = ttk.Checkbutton(
-            fit_frame,
-            text="Enable Fitting",
-            variable=self.fitvar,
-            command=self._toggle_fit,
-        )
-        fitbtn.grid(row=1, column=0, sticky="w")
-
-    @property
-    def keys(self):
-        return ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
-
-    def display(self, fit_params):
-        for k, v in fit_params.items():
-            if k in ["x0", "y0", "sx", "sy"]:
-                v *= config.pixel_size
-            elif k == "theta":
-                v = np.degrees(v)
-            entry = self.fit_params[k]
-            entry.configure(state="normal")
-            entry.delete(0, "end")
-            entry.insert(0, "{:.4g}".format(v))
-            entry.configure(state="readonly")
-
-    def clear(self):
-        for entry in self.fit_params.values():
-            entry.configure(state="normal")
-            entry.delete(0, "end")
-            entry.configure(state="readonly")
-
-    def _toggle_fixtheta(self):
-        config["fit"]["fix_theta"] = str(self.fixtheta.get())
-        config.save()
-
-    def _toggle_fit(self):
-        config.fit = self.fitvar.get()
 
     def _update_roi(self, event=None):
         try:
-            roi = tuple(int(v.get()) for v in self.roi_entries)
+            roi = tuple(int(v.var.get()) for v in self.roi_entries)
         except ValueError:
             logging.error("Malformed ROI params!")
             return False
@@ -177,6 +66,46 @@ class FitParams(ttk.Frame):
                 config.roi_enabled = True
                 self.toggle_roi.configure(text="Disable", state="active")
                 logging.debug("ROI enabled")
+
+
+class CenterControl(ttk.LabelFrame):
+    def __init__(self, master):
+        super().__init__(master, text="Center")
+        self.master = master
+
+        self.fixcenter = tk.BooleanVar()
+        self.fixcenter.set(config.fix_center)
+        fixcenter_btn = ttk.Checkbutton(
+            self,
+            text="Fix Center",
+            variable=self.fixcenter,
+            command=self._toggle_center,
+        )
+        fixcenter_btn.grid(row=0, column=0)
+
+        center_x_var = tk.DoubleVar()
+        self.center_x = FloatEntry(self, width=5, textvariable=center_x_var)
+        self.center_x.var = center_x_var
+
+        center_y_var = tk.DoubleVar()
+        self.center_y = FloatEntry(self, width=5, textvariable=center_y_var)
+        self.center_y.var = center_y_var
+
+        if config.center:
+            x, y = config.center
+            self.center_x.var.set(x)
+            self.center_y.var.set(y)
+
+        self.center_x.grid(row=0, column=1)
+        self.center_y.grid(row=0, column=2)
+
+        self.center_x.bind("<Return>", self._update_center)
+        self.center_y.bind("<Return>", self._update_center)
+
+        self.last_shot_center = ttk.Button(
+            self, text="Last Shot", command=self._fill_last_shot_center
+        )
+        self.last_shot_center.grid(row=1, column=1, columnspan=2)
 
     def _update_center(self, event=None):
         x, y = self.center_x.var.get(), self.center_y.var.get()
@@ -209,6 +138,90 @@ class FitParams(ttk.Frame):
                 logging.warning("Shot has no 2D Gaussian fit.")
         except IndexError:
             logging.error("No last shot to pull from!")
+
+
+class FitControl(ttk.LabelFrame):
+    def __init__(self, master):
+        super().__init__(master, text="Fit")
+        self.master = master
+
+        self.fixtheta = tk.BooleanVar()
+        self.fixtheta.set(config.fix_theta)
+        fixtheta_btn = ttk.Checkbutton(
+            self,
+            text="Fix Theta",
+            variable=self.fixtheta,
+            command=self._toggle_fixtheta,
+        )
+        fixtheta_btn.grid(row=0, column=0, sticky="w")
+        self.fitvar = tk.BooleanVar()
+        self.fitvar.set(config.fit)
+        fitbtn = ttk.Checkbutton(
+            self, text="Enable Fitting", variable=self.fitvar, command=self._toggle_fit
+        )
+        fitbtn.grid(row=1, column=0, sticky="w")
+
+    def _toggle_fixtheta(self):
+        config["fit"]["fix_theta"] = str(self.fixtheta.get())
+        config.save()
+
+    def _toggle_fit(self):
+        config.fit = self.fitvar.get()
+
+
+class FitParams(ttk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.master = master
+        self.fit_params = {}
+        self.config_params = {}
+
+        # Fit Parameters (uneditable)
+        params_frame = ttk.Frame(self)
+        params_frame.pack(side="left", fill="y", expand=True)
+        keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
+        labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
+        for l_idx, lbl in enumerate(labels):
+            ttk.Label(params_frame, text=lbl).grid(row=l_idx, column=0)
+
+        for f_idx in range(8):
+            entry = ttk.Entry(params_frame, state="readonly")
+            entry.grid(row=f_idx, column=1)
+            self.fit_params[keys[f_idx]] = entry
+
+        options_frame = ttk.Frame(self)
+        options_frame.pack(side="left", fill="y", expand=True)
+
+        roi_control = RegionOfInterestControl(options_frame)
+        roi_control.pack(fill="x", expand=True)
+
+        center_control = CenterControl(options_frame)
+        center_control.pack(fill="x", expand=True)
+
+        fit_frame = FitControl(options_frame)
+        fit_frame.pack(fill="x", expand=True)
+
+    @property
+    def keys(self):
+        return ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
+
+    def display(self, fit_params):
+        for k, v in fit_params.items():
+            if k in ["x0", "y0", "sx", "sy"]:
+                v *= config.pixel_size
+            elif k == "theta":
+                v = np.degrees(v)
+            entry = self.fit_params[k]
+            entry.configure(state="normal")
+            entry.delete(0, "end")
+            entry.insert(0, "{:.4g}".format(v))
+            entry.configure(state="readonly")
+
+    def clear(self):
+        for entry in self.fit_params.values():
+            entry.configure(state="normal")
+            entry.delete(0, "end")
+            entry.configure(state="readonly")
 
 
 class TemperatureParams(ttk.Frame):
