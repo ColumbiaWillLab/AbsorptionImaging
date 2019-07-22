@@ -78,7 +78,26 @@ class Config(configparser.ConfigParser):
     @property
     def fix_theta(self):
         """If True, 2D Gaussian fit restricts theta to 0 (hor/ver)."""
-        return self.getboolean("fit", "fix_theta")
+        try:
+            return self.getboolean("fit", "fix_theta")
+        except configparser.NoOptionError:
+            return False
+
+    @fix_theta.setter
+    def fix_theta(self, val):
+        self["fit"]["fix_theta"] = str(val)
+
+    @property
+    def fix_z0(self):
+        """If True, 2D Gaussian fit restricts z0 to 0."""
+        try:
+            return self.getboolean("fit", "fix_z0")
+        except configparser.NoOptionError:
+            return False
+
+    @fix_z0.setter
+    def fix_z0(self, val):
+        self["fit"]["fix_z0"] = str(val)
 
     @property
     def roi(self):

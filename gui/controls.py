@@ -145,28 +145,40 @@ class FitControl(ttk.LabelFrame):
         super().__init__(master, text="Fit")
         self.master = master
 
-        self.fixtheta = tk.BooleanVar()
-        self.fixtheta.set(config.fix_theta)
-        fixtheta_btn = ttk.Checkbutton(
-            self,
-            text="Fix Theta",
-            variable=self.fixtheta,
-            command=self._toggle_fixtheta,
+        self.fix_z0 = tk.BooleanVar()
+        self.fix_z0.set(config.fix_z0)
+        fix_z0_btn = ttk.Checkbutton(
+            self, text="Fix z0", variable=self.fix_z0, command=self._toggle_fix_z0
         )
-        fixtheta_btn.grid(row=0, column=0, sticky="w")
-        self.fitvar = tk.BooleanVar()
-        self.fitvar.set(config.fit)
-        fitbtn = ttk.Checkbutton(
-            self, text="Enable Fitting", variable=self.fitvar, command=self._toggle_fit
-        )
-        fitbtn.grid(row=1, column=0, sticky="w")
+        fix_z0_btn.grid(row=0, column=0, sticky="w")
 
-    def _toggle_fixtheta(self):
-        config["fit"]["fix_theta"] = str(self.fixtheta.get())
+        self.fix_theta = tk.BooleanVar()
+        self.fix_theta.set(config.fix_theta)
+        fix_theta_btn = ttk.Checkbutton(
+            self, text="Fix θ", variable=self.fix_theta, command=self._toggle_fix_theta
+        )
+        fix_theta_btn.grid(row=0, column=1, sticky="w")
+
+        self.enable_fit = tk.BooleanVar()
+        self.enable_fit.set(config.fit)
+        enable_fit_btn = ttk.Checkbutton(
+            self,
+            text="Enable Fitting",
+            variable=self.enable_fit,
+            command=self._toggle_fit,
+        )
+        enable_fit_btn.grid(row=1, column=0, sticky="w")
+
+    def _toggle_fix_theta(self):
+        config.fix_theta = self.fix_theta.get()
         config.save()
 
     def _toggle_fit(self):
-        config.fit = self.fitvar.get()
+        config.fit = self.enable_fit.get()
+
+    def _toggle_fix_z0(self):
+        config.fix_z0 = self.fix_z0.get()
+        config.save()
 
 
 class FitParams(ttk.Frame):

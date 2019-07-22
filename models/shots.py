@@ -154,7 +154,7 @@ class Shot:
         model.set_param_hint(
             "theta", min=-np.pi / 4, max=np.pi / 4, vary=not config.fix_theta
         )
-        model.set_param_hint("z0", min=-1, max=1)
+        model.set_param_hint("z0", min=-1, max=1, vary=not config.fix_z0)
 
         result = model.fit(
             np.ravel(self.absorption[::5]),
