@@ -1,28 +1,34 @@
 import logging
-import numpy as np
 
 from collections import deque
+from abc import ABC, abstractmethod
+
+import numpy as np
 
 from boltons.cacheutils import cachedproperty
 from scipy.stats import linregress
 
 from config import config
 
-KB = 1.38e-23
+
+class ShotSequence(ABC):
+    pass
 
 
-class TimeOfFlight:
+class TimeOfFlight(ShotSequence):
+    KB = 1.38e-23
+
     def __init__(self, times):
         self.times = times
         self.shots = deque(maxlen=len(times))
 
     @cachedproperty
     def sigma_x_pixel(self):
-        return [s.twoD_gaussian.best_values["sx"] for s in self.shots]
+        return [s.fit.result.best_values["sx"] for s in self.shots]
 
     @cachedproperty
     def sigma_y_pixel(self):
-        return [s.twoD_gaussian.best_values["sy"] for s in self.shots]
+        return [s.fit.result.best_values["sy"] for s in self.shots]
 
     @cachedproperty
     def sigma_x_sq(self):
@@ -46,19 +52,19 @@ class TimeOfFlight:
 
     @cachedproperty
     def x_temp(self):
-        return self.x_fit[0] * config.atom_mass / KB * 1e6
+        return self.x_fit[0] * config.atom_mass / type(self).KB * 1e6
 
     @cachedproperty
     def y_temp(self):
-        return self.y_fit[0] * config.atom_mass / KB * 1e6
+        return self.y_fit[0] * config.atom_mass / type(self).KB * 1e6
 
     @cachedproperty
     def x_temp_err(self):
-        return self.x_fit[4] * config.atom_mass / KB * 1e6
+        return self.x_fit[4] * config.atom_mass / type(self).KB * 1e6
 
     @cachedproperty
     def y_temp_err(self):
-        return self.y_fit[4] * config.atom_mass / KB * 1e6
+        return self.y_fit[4] * config.atom_mass / type(self).KB * 1e6
 
     @cachedproperty
     def avg_temp(self):
@@ -81,8 +87,8 @@ class TimeOfFlight:
             )
             self.shots.append(shot)
             if len(self.shots) == self.shots.maxlen:
-                for shot in self.shots:
-                    shot.warm_cache(fit=True)
+                # for shot in self.shots:
+                #     shot.warm_cache(fit=True)
                 cb(self)
 
     def plot(self, fig, **kw):
