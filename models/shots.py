@@ -15,6 +15,7 @@ from boltons.cacheutils import cachedproperty
 from scipy.stats.distributions import chi2
 from scipy.ndimage import gaussian_filter
 from lmfit import Model
+from lmfit.models import GaussianModel, ConstantModel
 
 from config import config
 from utils.fitting import ravel, gaussian_2D
@@ -34,6 +35,7 @@ class Shot:
         self.name = name
 
         self.fit = None
+        self.fit_1D = None
 
         # Warm transmission cache and log shape to debug
         logging.debug("Processed transmission: %s", self.transmission.shape)
@@ -98,6 +100,8 @@ class Shot:
         return 1 - self.transmission
 
     def fit_2D(self, config):
+        self.fit_1D_summed(config)
+
         roi = None
         if config.roi_enabled and config.roi:
             roi = config.roi
@@ -112,12 +116,13 @@ class Shot:
             center=center,
             fix_theta=config.fix_theta,
             fix_z0=config.fix_z0,
+            guess=self.fit_1D.best_values,
         )
         return self.fit
 
-    def fit_1D_summed(self, *args, **kwargs):
-        self.fit = ShotFit1DSummed(self, *args, **kwargs)
-        return self.fit
+    def fit_1D_summed(self, config):
+        self.fit_1D = ShotFit1DSummed(self)
+        return self.fit_1D
 
     @cachedproperty
     def atom_number(self):
@@ -214,14 +219,30 @@ class ShotFit(ABC):
         center: Optional[Tuple[int, int]] = None,
         fix_theta: bool = True,
         fix_z0: bool = False,
+        guess: Optional[dict] = None,
     ):
         self.shot = shot
         self.roi = roi
         self.center = center
         self.vary_theta = not fix_theta
         self.vary_z0 = not fix_z0
+        self.guess = guess
+
+        self.result = None
 
         self.fit()
+
+    @classmethod
+    def save_result(cls, func):
+        """Decorator for the 'fit' method to save result."""
+
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            result = func(self, *args, **kwargs)
+            self.result = result
+            return result
+
+        return wrapper
 
     @property
     def meshgrid(self):
@@ -263,38 +284,22 @@ class ShotFit(ABC):
         logging.info("Finding transmission peak - x: %i, y: %i, z: %i", x, y, z)
         return x, y, z
 
-    @abstractmethod
-    def fit(self):
-        """Implement this method in your derived class and return a ModelResult."""
-
-    @classmethod
-    def result(cls, func):
-        """Decorator for the 'fit' method to save result."""
-
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            result = func(self, *args, **kwargs)
-            self.result = result
-            return result
-
-        return wrapper
-
     @cachedproperty
     def contour_levels(self):
         """Returns the 0.5-sigma, 1-sigma, and 1.5-sigma z values of the 2D Gaussian model."""
-        bp_2D = self.result.best_values
+        bp_2D = self.best_values
         x0, y0, sx, sy = (bp_2D[k] for k in ("x0", "y0", "sx", "sy"))
         sx_pts = x0 + sx * np.array([1.5, 1.0, 0.5])
         sy_pts = y0 + sy * np.array([1.5, 1.0, 0.5])
         x, y = np.meshgrid(sx_pts, sy_pts)
 
-        contour_levels = self.result.eval(x=x, y=y).reshape((3, 3))
+        contour_levels = self.eval(x=x, y=y).reshape((3, 3))
         return np.diag(contour_levels)
 
     @cachedproperty
     def sigma_mask(self):
         """Returns a numpy mask of pixels within the 2-sigma limit of the model (no ROI)"""
-        bp_2D = self.result.best_values
+        bp_2D = self.best_values
         x0, y0, a, b, theta = (bp_2D[k] for k in ("x0", "y0", "sx", "sy", "theta"))
         y, x = np.ogrid[0 : self.shot.height, 0 : self.shot.width]
 
@@ -309,7 +314,7 @@ class ShotFit(ABC):
 
     @cachedproperty
     def slice_coordinates(self):
-        params = self.result.best_values
+        params = self.best_values
         x_c = params["x0"]
         y_c = params["y0"]
         m = np.tan(params["theta"])
@@ -341,20 +346,29 @@ class ShotFit(ABC):
         v_data = self.shot.absorption_raw[ys_v.astype("int"), xs_v.astype("int")]
         return (xs_h, ys_h, h_data), (xs_v, ys_v, v_data)
 
+    @abstractmethod
+    def fit(self):
+        """Implement this method in your derived class. Run the actual fit."""
+
+    @abstractmethod
     def eval(self, *, x, y):
-        """Evaluates the fit at the given coordinates (proxy for ModelResult)."""
-        return self.result.eval(x=x, y=y)
+        """Implement this method in your derived class.
+        Evaluates the fit at the given coordinates (proxy for ModelResult)."""
+
+    @abstractmethod
+    def best_values(self):
+        """Implement this property in your derived class. Returns a dictionary of values."""
 
 
 class ShotFit2D(ShotFit):
     """2D Gaussian fit"""
 
-    @ShotFit.result
+    @ShotFit.save_result
     def fit(self):
         """Fits a 2D Gaussian against the absorption."""
         logging.info("Running 2D fit...")
-        x_mg, y_mg = self.shot.meshgrid
 
+        x_mg, y_mg = self.shot.meshgrid
         model = Model(ravel(gaussian_2D), independent_vars=["x", "y"])
 
         if self.roi:
@@ -362,7 +376,7 @@ class ShotFit2D(ShotFit):
         else:
             x0, y0, x1, y1 = 0, 0, self.shot.width, self.shot.height
 
-        x_c, y_c, A, vary_center = None, None, 0.5, True
+        x_c, y_c, x_s, y_s, A, vary_center = None, None, 100, 100, 0.5, True
         if self.center:
             x, y = self.center
             if x < x0 or x > x1 or y < y0 or y > y1:
@@ -378,7 +392,16 @@ class ShotFit2D(ShotFit):
             x_c, y_c = (x1 + x0) / 2, (y1 + y0) / 2
 
         if not x_c and not y_c:
-            x_c, y_c, A = self.peak
+            if self.guess:
+                x_c, y_c, x_s, y_s, A = (
+                    self.guess["x0"],
+                    self.guess["y0"],
+                    self.guess["sx"],
+                    self.guess["sy"],
+                    self.guess["A"],
+                )
+            else:
+                x_c, y_c, A = self.peak
 
         model.set_param_hint("A", value=A, min=0, max=2)
         model.set_param_hint("x0", value=x_c, min=x0, max=x1, vary=vary_center)
@@ -391,12 +414,13 @@ class ShotFit2D(ShotFit):
         )
         model.set_param_hint("z0", min=-1, max=1, vary=self.vary_z0)
 
+        logging.info("Using guess: x0=%.2f, y0=%.2f, sx=%.2f, sy=%.2f, A=%.2f", x_c, y_c, x_s, y_s, A)
         result = model.fit(
             np.ravel(self.shot.absorption[::5]),
             x=x_mg[::5],
             y=y_mg[::5],
-            sx=100,
-            sy=100,
+            sx=x_s,
+            sy=y_s,
             theta=0,
             z0=0,
             # scale_covar=False,
@@ -405,10 +429,52 @@ class ShotFit2D(ShotFit):
         logging.info(result.fit_report())
         return result
 
+    def eval(self, *, x, y):
+        """Evaluates the fit at the given coordinates (proxy for ModelResult)."""
+        return self.result.eval(x=x, y=y)
+
+    @property
+    def best_values(self):
+        return self.result.best_values
+
 
 class ShotFit1DSummed(ShotFit):
     """1D Gaussian fit computed against the horizontal and vertical sums of the image."""
 
-    @ShotFit.result
+    @ShotFit.save_result
     def fit(self):
         logging.info("Running 1D summed fit...")
+
+        x_mg, y_mg = np.arange(self.shot.width), np.arange(self.shot.height)
+        x_data, y_data = (
+            np.sum(self.shot.absorption, axis=0),
+            np.ravel(np.sum(self.shot.absorption, axis=1)),
+        )
+        model = GaussianModel()
+
+        x_result = model.fit(x_data, x=x_mg, center=self.shot.width / 2)
+        y_result = model.fit(y_data, x=y_mg, center=self.shot.height / 2)
+
+        return x_result, y_result
+
+    def eval(self, *, x, y):
+        """Evaluates the fit at the given coordinates (proxy for ModelResult)."""
+        return None
+
+    @property
+    def best_values(self):
+        amplitude = np.mean(
+            (
+                self.result[0].params["height"].value / self.shot.height,
+                self.result[1].params["height"].value / self.shot.width,
+            )
+        )
+        return {
+            "A": amplitude,
+            "x0": self.result[0].best_values["center"],
+            "y0": self.result[1].best_values["center"],
+            "sx": self.result[0].best_values["sigma"],
+            "sy": self.result[1].best_values["sigma"],
+            "theta": 0,
+            "z0": 0,
+        }

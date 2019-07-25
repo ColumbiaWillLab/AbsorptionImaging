@@ -49,8 +49,8 @@ class ShotList(ttk.Frame):
             if shot.fit:
                 values = (
                     shot.atom_number,
-                    shot.fit.result.best_values["sx"] * config.pixel_size,
-                    shot.fit.result.best_values["sy"] * config.pixel_size,
+                    shot.fit.best_values["sx"] * config.pixel_size,
+                    shot.fit.best_values["sy"] * config.pixel_size,
                 )
             else:
                 values = (shot.atom_number,)
@@ -275,8 +275,8 @@ class CenterControl(ttk.LabelFrame):
             # TODO: this logic probably should live in the presenter
             shot = self.presenter.shot_presenter.recent_shots[-1]
             if shot.fit:
-                self.center_x.var.set(shot.fit.result.best_values["x0"])
-                self.center_y.var.set(shot.fit.result.best_values["y0"])
+                self.center_x.var.set(shot.fit.best_values["x0"])
+                self.center_y.var.set(shot.fit.best_values["y0"])
                 self._update_center()
             else:
                 logging.warning("Shot has no 2D Gaussian fit.")

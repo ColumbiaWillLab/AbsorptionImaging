@@ -61,9 +61,7 @@ class ShotPresenter:
 
         self.fit_view.clear()
         if shot.fit:
-            self.fit_view.display(
-                dict({"N": shot.atom_number}, **shot.fit.result.best_values)
-            )
+            self.fit_view.display(dict({"N": shot.atom_number}, **shot.fit.best_values))
         else:
             self.fit_view.display({"N": shot.atom_number})
 

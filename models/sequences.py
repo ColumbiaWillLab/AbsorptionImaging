@@ -37,7 +37,7 @@ class ShotSequence(ABC):
         return np.array([s.atom_number for s in self.shots])
 
     def shot_param_arr(self, key):
-        return np.array([s.fit.result.best_values[key] for s in self.shots])
+        return np.array([s.fit.best_values[key] for s in self.shots])
 
     def add(self, shot, cb):
         if len(self.shots) < self.shots.maxlen:
