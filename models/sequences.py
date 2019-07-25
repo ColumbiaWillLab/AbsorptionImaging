@@ -12,105 +12,128 @@ from config import config
 
 
 class ShotSequence(ABC):
-    pass
+    def __init__(self, independent_var):
+        self.independent_var = np.array(independent_var)
+        self.shots = deque(maxlen=len(self.independent_var))
+
+    @abstractmethod
+    def x(self):
+        pass
+
+    @abstractmethod
+    def y(self):
+        pass
+
+    @property
+    def sigma_x(self):
+        return self.shot_param_arr("sx") * config.physical_scale
+
+    @property
+    def sigma_y(self):
+        return self.shot_param_arr("sy") * config.physical_scale
+
+    @property
+    def atom_number(self):
+        return np.array([s.atom_number for s in self.shots])
+
+    def shot_param_arr(self, key):
+        return np.array([s.fit.result.best_values[key] for s in self.shots])
+
+    def add(self, shot, cb):
+        if len(self.shots) < self.shots.maxlen:
+            logging.info(
+                "Added shot %s as x=%.2f to sequence!",
+                shot.name,
+                self.independent_var[len(self.shots)],
+            )
+            self.shots.append(shot)
+            if len(self.shots) == self.shots.maxlen:
+                cb(self)
+
+    @abstractmethod
+    def fit(self):
+        pass
+
+    @abstractmethod
+    def plot(self, fig):
+        pass
 
 
 class TimeOfFlight(ShotSequence):
     KB = 1.38e-23
 
-    def __init__(self, times):
-        self.times = times
-        self.shots = deque(maxlen=len(times))
+    @property
+    def x(self):
+        return np.square(self.independent_var + config.repump_time)
+
+    @property
+    def y(self):
+        return ("X", np.square(self.sigma_x)), ("Y", np.square(self.sigma_y))
 
     @cachedproperty
-    def sigma_x_pixel(self):
-        return [s.fit.result.best_values["sx"] for s in self.shots]
+    def fit(self):
+        results = []
+        for label, y in self.y:
+            fit = linregress(self.x, y)
+            results.append((label, y, fit))
 
-    @cachedproperty
-    def sigma_y_pixel(self):
-        return [s.fit.result.best_values["sy"] for s in self.shots]
+        return results
 
-    @cachedproperty
-    def sigma_x_sq(self):
-        return np.square([s * config.physical_scale for s in self.sigma_x_pixel])
+    @property
+    def temperatures(self):
+        return [f[0] * config.atom_mass / type(self).KB * 1e6 for _, _, f in self.fit]
 
-    @cachedproperty
-    def sigma_y_sq(self):
-        return np.square([s * config.physical_scale for s in self.sigma_y_pixel])
+    @property
+    def temperature_errors(self):
+        return [f[4] * config.atom_mass / type(self).KB * 1e6 for _, _, f in self.fit]
 
-    @cachedproperty
-    def times_sq(self):
-        return np.square(np.array(self.times) + config.repump_time)
-
-    @cachedproperty
-    def x_fit(self):
-        return linregress(self.times_sq, self.sigma_x_sq)
-
-    @cachedproperty
-    def y_fit(self):
-        return linregress(self.times_sq, self.sigma_y_sq)
-
-    @cachedproperty
-    def x_temp(self):
-        return self.x_fit[0] * config.atom_mass / type(self).KB * 1e6
-
-    @cachedproperty
-    def y_temp(self):
-        return self.y_fit[0] * config.atom_mass / type(self).KB * 1e6
-
-    @cachedproperty
-    def x_temp_err(self):
-        return self.x_fit[4] * config.atom_mass / type(self).KB * 1e6
-
-    @cachedproperty
-    def y_temp_err(self):
-        return self.y_fit[4] * config.atom_mass / type(self).KB * 1e6
-
-    @cachedproperty
+    @property
     def avg_temp(self):
-        return np.mean((self.x_temp, self.y_temp))
+        return np.mean(self.temperatures)
 
-    @cachedproperty
+    @property
     def avg_temp_err(self):
-        return 0.5 * np.sqrt(np.sum(np.square((self.x_temp_err, self.y_temp_err))))
+        return 0.5 * np.sqrt(np.sum(np.square(self.temperature_errors)))
 
-    @cachedproperty
-    def atom_number(self):
-        return [s.atom_number for s in self.shots]
-
-    def add(self, shot, cb):
-        if len(self.shots) < self.shots.maxlen:
-            logging.info(
-                "Added shot %s as t=%.2fms to ToF",
-                shot.name,
-                self.times[len(self.shots)],
-            )
-            self.shots.append(shot)
-            if len(self.shots) == self.shots.maxlen:
-                # for shot in self.shots:
-                #     shot.warm_cache(fit=True)
-                cb(self)
-
-    def plot(self, fig, **kw):
+    def plot(self, fig):
         fig.clf()
         plt = fig.add_subplot()
 
-        color = next(plt._get_lines.prop_cycler)["color"]
-        plt.plot(self.times_sq, self.sigma_x_sq, "o", color=color, label="X")
-        plt.plot(
-            self.times_sq, self.x_fit[0] * self.times_sq + self.x_fit[1], color=color
-        )
+        for label, y, fit in self.fit:
+            color = next(plt._get_lines.prop_cycler)["color"]
+            plt.plot(self.x, y, "o", color=color, label=label)
+            plt.plot(self.x, fit[0] * self.x + fit[1], color=color)
 
-        color = next(plt._get_lines.prop_cycler)["color"]
-        plt.plot(self.times_sq, self.sigma_y_sq, "o", color=color, label="Y")
-        plt.plot(
-            self.times_sq, self.y_fit[0] * self.times_sq + self.y_fit[1], color=color
-        )
         plt.set_xlabel("t^2 (ms^2)")
         plt.set_ylabel("sigma^2 (mm^2)")
 
-        logging.info("Temp. X: %.4g\tTemp. Y: %.4g", self.x_temp, self.y_temp)
+        logging.info(
+            "Temp. X: %.4g\tTemp. Y: %.4g", self.temperatures[0], self.temperatures[1]
+        )
 
         plt.legend()
+
+        return fig
+
+
+class AtomNumberOptimization(ShotSequence):
+    @property
+    def x(self):
+        return self.independent_var
+
+    @property
+    def y(self):
+        return ("Atom Number", self.atom_number)
+
+    def fit(self):
+        pass
+
+    def plot(self, fig):
+        fig.clf()
+        plt = fig.add_subplot()
+
+        plt.plot(self.x, self.y[1], "o", label=self.y[0])
+
+        plt.set_ylabel("Atom Number")
 
         return fig

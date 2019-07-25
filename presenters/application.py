@@ -20,6 +20,7 @@ class MainWindowPresenter:
         self.view = None
         self.log_presenter = None
         self.shot_presenter = None
+        self.sequence_presenter = None
 
     def set_view(self, view):
         self.view = view

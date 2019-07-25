@@ -10,7 +10,6 @@ import numpy as np
 import matplotlib.colors as colors
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as patches
-from matplotlib.figure import Figure
 
 from boltons.cacheutils import cachedproperty
 from scipy.stats.distributions import chi2

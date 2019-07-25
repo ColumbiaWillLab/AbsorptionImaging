@@ -42,7 +42,7 @@ class ShotPresenter:
         figure = Figure(figsize=(8, 5))
         figure.savefig(_output_path(name), dpi=150)
 
-        self.app.sequence_presenter.add_shot_to_tof(shot)
+        self.app.sequence_presenter.add_shot(shot)
 
     def _update_recent_shots(self, shot):
         if shot in self.recent_shots:

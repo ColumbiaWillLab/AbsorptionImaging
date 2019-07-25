@@ -7,7 +7,7 @@ import tkinter.ttk as ttk
 from views.logs import LogTextBox
 from views.plots import MplFigure, PlotSettings
 from views.shots import ShotList, ShotFit, ExperimentParams
-from views.sequences import ToFFit
+from views.sequences import ToFFit, AtomNumberOptimization
 
 
 class MainWindow(ttk.Frame):
@@ -86,10 +86,12 @@ class Tabs(ttk.Notebook):
 
         self.shot_fit = ShotFit(self, self.presenter)
         self.tof_fit = ToFFit(self, self.presenter)
+        self.atom_number_fit = AtomNumberOptimization(self, self.presenter)
         exp = ExperimentParams(self)
         settings = PlotSettings(self)
 
         self.add(self.shot_fit, text="Gaussian")
         self.add(self.tof_fit, text="Temperature")
+        self.add(self.atom_number_fit, text="Atom # Optimization")
         self.add(exp, text="Experiment Settings")
         self.add(settings, text="Plot Settings")

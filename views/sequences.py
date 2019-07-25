@@ -19,29 +19,10 @@ class ToFFit(ttk.Frame):
         super().__init__(self.master)
 
         # Left Frame (ToF Controls)
-        left_frame = ttk.Frame(self)
-        left_frame.grid(row=0, column=0, rowspan=2)
-
-        ttk.Label(left_frame, text="Times of Flight:").pack()
-
-        st = tkst.ScrolledText(left_frame, state="normal", height=12, width=10)
-        st.pack(pady=(0, 5))
-        if config.tof:
-            st.insert("1.0", "\n".join(map(str, config.tof)))
-        else:
-            st.insert("1.0", "0.25\n0.5\n0.75\n1\n1.25\n1.5\n1.75\n2\n2.25\n2.5")
-
-        run_btn = ttk.Button(left_frame, text="Run", command=self._run)
-        run_btn.pack(anchor="w")
-
-        fit_selected = ttk.Button(
-            left_frame, text="Fit Selected", command=self._fit_selected
+        sequence_params = SequenceParams(
+            self, self.presenter, run="start_tof", fit_selected="start_tof_selection"
         )
-        fit_selected.pack()
-
-        self.st = st
-        self.run_btn = run_btn
-        self.fit_selected = fit_selected
+        sequence_params.grid(row=0, column=0, rowspan=2)
 
         # Right Top Frame (Temperature Output)
         rt_frame = ttk.Frame(self)
@@ -94,37 +75,13 @@ class ToFFit(ttk.Frame):
         self.repump_entry = repump_entry
         self.mass_entry = mass_entry
 
-    def _check_tof(self):
-        config["atoms"]["repump_time"] = str(self.repump_entry.get())
-        config["atoms"]["mass"] = str(self.mass_entry.get())
-        config.save()
-
-        try:
-            vals = [float(x) for x in self.st.get("1.0", "end-1c").split()]
-            if not all(x >= 0 and isfinite(x) for x in vals):
-                raise ValueError
-
-            config.tof = vals
-            config.save()
-            return vals
-        except ValueError:
-            tk.messagebox.showerror("Temperature Fitting Alert", "Invalid Entry!")
-
-    def _run(self):
-        vals = self._check_tof()
-        self.presenter.sequence_presenter.start_tof(vals)
-
-    def _fit_selected(self):
-        vals = self._check_tof()
-        self.presenter.sequence_presenter.start_tof_selection(vals)
-
     def display(self, tof):
         atom_n_mean = np.mean(tof.atom_number)
         pairs = [
-            (self.temp_entries[0][0], tof.x_temp),
-            (self.temp_entries[1][0], tof.y_temp),
-            (self.temp_entries[0][1], tof.x_temp_err),
-            (self.temp_entries[1][1], tof.y_temp_err),
+            (self.temp_entries[0][0], tof.temperatures[0]),
+            (self.temp_entries[1][0], tof.temperatures[1]),
+            (self.temp_entries[0][1], tof.temperature_errors[0]),
+            (self.temp_entries[1][1], tof.temperature_errors[1]),
             (self.temp_entries[2][0], tof.avg_temp),
             (self.temp_entries[2][1], tof.avg_temp_err),
             (self.atom_n_mean, atom_n_mean),
@@ -135,3 +92,61 @@ class ToFFit(ttk.Frame):
             entry.delete(0, "end")
             entry.insert(0, "{:.4g}".format(value))
             entry.configure(state="readonly")
+
+
+class AtomNumberOptimization(ttk.Frame):
+    def __init__(self, master, presenter):
+        self.master = master
+        self.presenter = presenter
+
+        super().__init__(self.master)
+
+        # Left Frame (ToF Controls)
+        sequence_params = SequenceParams(
+            self,
+            self.presenter,
+            run="start_atom_opt",
+            fit_selected="start_atom_opt_selection",
+        )
+        sequence_params.grid(row=0, column=0, rowspan=2)
+
+
+class SequenceParams(ttk.Frame):
+    def __init__(self, master, presenter, *, run, fit_selected):
+        self.master = master
+        self.presenter = presenter
+        self.run = run
+        self.fit_selected = fit_selected
+
+        super().__init__(self.master)
+
+        ttk.Label(self, text="Parameter:").pack()
+
+        st = tkst.ScrolledText(self, state="normal", height=12, width=10)
+        st.pack(pady=(0, 5))
+
+        run_btn = ttk.Button(self, text="Run", command=self._run)
+        run_btn.pack(anchor="w")
+
+        fit_selected = ttk.Button(self, text="Fit Selected", command=self._fit_selected)
+        fit_selected.pack()
+
+        self.st = st
+
+    def _check_sequence(self):
+        try:
+            vals = [float(x) for x in self.st.get("1.0", "end-1c").split()]
+            if not all(x >= 0 and isfinite(x) for x in vals):
+                raise ValueError
+
+            return vals
+        except ValueError:
+            tk.messagebox.showerror("Atom Number Optimization", "Invalid Entry!")
+
+    def _run(self):
+        vals = self._check_sequence()
+        getattr(self.presenter.sequence_presenter, self.run)(vals)
+
+    def _fit_selected(self):
+        vals = self._check_sequence()
+        getattr(self.presenter.sequence_presenter, self.fit_selected)(vals)
