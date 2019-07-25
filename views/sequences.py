@@ -22,11 +22,15 @@ class ToFFit(ttk.Frame):
         sequence_params = SequenceParams(
             self, self.presenter, run="start_tof", fit_selected="start_tof_selection"
         )
-        sequence_params.grid(row=0, column=0, rowspan=2)
+        sequence_params.pack(side="left", expand=True, anchor="e", pady=15, padx=15)
+
+        # Right Frame
+        right_frame = ttk.Frame(self)
+        right_frame.pack(side="left", expand=True, anchor="w", pady=15, padx=15)
 
         # Right Top Frame (Temperature Output)
-        rt_frame = ttk.Frame(self)
-        rt_frame.grid(row=0, column=1)
+        rt_frame = ttk.Frame(right_frame)
+        rt_frame.pack(side="top")
 
         self.temp_entries = []
         r = 0
@@ -58,8 +62,8 @@ class ToFFit(ttk.Frame):
         self.atom_n_cv = atom_n_cv
 
         # Right Bottom Frame (Config)
-        rb_frame = ttk.LabelFrame(self)
-        rb_frame.grid(row=1, column=1, pady=(10, 0))
+        rb_frame = ttk.Frame(right_frame)
+        rb_frame.pack(side="top", pady=(50, 0))
 
         ttk.Label(rb_frame, text="Repump Time (ms)").grid(row=0, column=0)
         ttk.Label(rb_frame, text="Mass (kg)").grid(row=1, column=0)
@@ -108,7 +112,7 @@ class AtomNumberOptimization(ttk.Frame):
             run="start_atom_opt",
             fit_selected="start_atom_opt_selection",
         )
-        sequence_params.grid(row=0, column=0, rowspan=2)
+        sequence_params.pack(expand=True)
 
 
 class SequenceParams(ttk.Frame):
@@ -126,7 +130,7 @@ class SequenceParams(ttk.Frame):
         st.pack(pady=(0, 5))
 
         run_btn = ttk.Button(self, text="Run", command=self._run)
-        run_btn.pack(anchor="w")
+        run_btn.pack()
 
         fit_selected = ttk.Button(self, text="Fit Selected", command=self._fit_selected)
         fit_selected.pack()

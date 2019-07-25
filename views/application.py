@@ -90,8 +90,8 @@ class Tabs(ttk.Notebook):
         exp = ExperimentParams(self)
         settings = PlotSettings(self)
 
-        self.add(self.shot_fit, text="Gaussian")
-        self.add(self.tof_fit, text="Temperature")
-        self.add(self.atom_number_fit, text="Atom # Optimization")
-        self.add(exp, text="Experiment Settings")
-        self.add(settings, text="Plot Settings")
+        self.add(self.shot_fit, text="Gaussian", padding=10)
+        self.add(self.tof_fit, text="Temperature", padding=10)
+        self.add(self.atom_number_fit, text="Atom # Optimization", padding=10)
+        self.add(exp, text="Experiment Settings", padding=10)
+        self.add(settings, text="Plot Settings", padding=10)

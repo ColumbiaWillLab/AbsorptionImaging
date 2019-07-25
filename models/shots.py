@@ -15,7 +15,7 @@ from boltons.cacheutils import cachedproperty
 from scipy.stats.distributions import chi2
 from scipy.ndimage import gaussian_filter
 from lmfit import Model
-from lmfit.models import GaussianModel, ConstantModel
+from lmfit.models import GaussianModel
 
 from config import config
 from utils.fitting import ravel, gaussian_2D
@@ -34,7 +34,7 @@ class Shot:
         self.shape = self.data.shape
         self.name = name
 
-        self.fit = None
+        self.fit_2D = None
         self.fit_1D = None
 
         # Warm transmission cache and log shape to debug
@@ -42,7 +42,7 @@ class Shot:
 
     def __eq__(self, other):
         return self.name == other.name and np.array_equal(
-            self.transmission_raw, other.transmission_raw
+            self.transmission, other.transmission
         )
 
     @property
@@ -63,7 +63,7 @@ class Shot:
         return x, y
 
     @cachedproperty
-    def transmission_raw(self):
+    def transmission(self):
         """Returns the beam and dark-field compensated transmission image. Dark-field is subtracted
         from both the atom image and the beam image, and the atom image is divided by the beam
         image, giving the transmission t^2. The values should optimally lie in the range of [0, 1]
@@ -79,50 +79,64 @@ class Shot:
         threshold = 7
         transmission = np.divide(atoms, light, where=light > threshold)
         transmission[light <= threshold] = 1
+        np.clip(transmission, a_min=-0.1, a_max=1.5)
 
         return transmission
 
     @property
-    def absorption_raw(self):
+    def absorption(self):
         """Raw absorption data"""
-        return 1 - self.transmission_raw
+        return 1 - self.transmission
 
     @cachedproperty
-    def transmission(self):
-        """The transmission image for fitting (and other derived data) - filtered/clipped"""
-        return gaussian_filter(
-            np.clip(self.transmission_raw, a_min=0, a_max=1), sigma=3
+    def atom_density(self):
+        return np.clip(
+            -np.log(self.transmission, where=self.transmission > 0), a_min=0, a_max=6
         )
 
     @property
-    def absorption(self):
-        """The "inverse" of the transmission (assuming max transmission is 1)"""
-        return 1 - self.transmission
+    def fit(self):
+        # if self.fit_2D is None:
+        #     return self.fit_1D
+        return self.fit_2D
 
-    def fit_2D(self, config):
-        self.fit_1D_summed(config)
+    def run_fit(self, cfg):
+        self.clear_fit()
+
+        if cfg.fit_2D:
+            self.run_fit_2D(cfg)
+        else:
+            self.run_fit_1D_summed(cfg)
+
+    def run_fit_2D(self, cfg):
+        self.run_fit_1D_summed(cfg)
 
         roi = None
-        if config.roi_enabled and config.roi:
-            roi = config.roi
+        if cfg.roi_enabled and cfg.roi:
+            roi = cfg.roi
 
         center = None
-        if config.fix_center and config.center:
-            center = config.center
+        if cfg.fix_center and cfg.center:
+            center = cfg.center
 
-        self.fit = ShotFit2D(
+        self.fit_2D = ShotFit2D(
             self,
+            fit_density=cfg.fit_atom_density,
             roi=roi,
             center=center,
-            fix_theta=config.fix_theta,
-            fix_z0=config.fix_z0,
+            fix_theta=cfg.fix_theta,
+            fix_z0=cfg.fix_z0,
             guess=self.fit_1D.best_values,
         )
-        return self.fit
+        return self.fit_2D
 
-    def fit_1D_summed(self, config):
-        self.fit_1D = ShotFit1DSummed(self)
+    def run_fit_1D_summed(self, cfg):
+        self.fit_1D = ShotFit1DSummed(self, fit_density=cfg.fit_atom_density)
         return self.fit_1D
+
+    def clear_fit(self):
+        self.fit_2D = None
+        self.fit_1D = None
 
     @cachedproperty
     def atom_number(self):
@@ -134,27 +148,35 @@ class Shot:
         )  # off resonance
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
+        data = self.transmission
         if self.fit:
             if self.fit.roi:
-                data = self.fit.transmission_roi
+                x0, y0, x1, y1 = self.fit.roi
+                data = data[x0:x1, y0:y1]
             else:
-                data = self.transmission[self.fit.sigma_mask]
-        else:
-            data = self.transmission
+                data = data[self.fit.sigma_mask]
 
         density = -np.log(data, where=data > 0)
         return (area / sigma) * np.sum(density) / 0.866  # Divide by 1.5-sigma area
 
     def plot(self, fig, *args, **kwargs):
         fig.clf()
-        norm = (-0.1, 1.0)
+
+        if config.fit_atom_density:
+            nmax = 6.0
+            img = self.atom_density
+        else:
+            nmax = 1.0
+            img = self.absorption_raw
+
+        norm = (-0.1, nmax)
         color_norm = colors.Normalize(*norm)
 
         ratio = [1, 9]
         gs = gridspec.GridSpec(2, 2, width_ratios=ratio, height_ratios=ratio)
 
         image = fig.add_subplot(gs[1, 1])
-        image.imshow(self.absorption_raw, cmap=config.colormap, norm=color_norm)
+        image.imshow(img, cmap=config.colormap, norm=color_norm)
 
         if config.roi_enabled and config.roi:
             x0, y0, x1, y1 = config.roi
@@ -197,7 +219,7 @@ class Shot:
                 image.contour(
                     self.fit.eval(x=x, y=y).reshape(self.shape),
                     levels=self.fit.contour_levels,
-                    cmap="magma",
+                    cmap=config.colormap,
                     linewidths=1,
                     norm=color_norm,
                 )
@@ -215,6 +237,7 @@ class ShotFit(ABC):
     def __init__(
         self,
         shot: Shot,
+        fit_density: bool = False,
         roi: Optional[Tuple[int, int, int, int]] = None,
         center: Optional[Tuple[int, int]] = None,
         fix_theta: bool = True,
@@ -222,6 +245,7 @@ class ShotFit(ABC):
         guess: Optional[dict] = None,
     ):
         self.shot = shot
+        self.fit_density = fit_density
         self.roi = roi
         self.center = center
         self.vary_theta = not fix_theta
@@ -255,27 +279,33 @@ class ShotFit(ABC):
             y, x = self.shot.meshgrid
         return x, y
 
+    @cachedproperty
+    def fit_data(self):
+        if self.fit_density:
+            return gaussian_filter(self.shot.atom_density, sigma=3)
+        else:
+            return gaussian_filter(self.shot.absorption, sigma=3)
+
     @property
-    def transmission_roi(self):
-        """Transmission pixel matrix bounded by the region of interest."""
+    def fit_data_raw(self):
+        if self.fit_density:
+            return self.shot.atom_density
+        else:
+            return self.shot.absorption
+
+    @property
+    def fit_data_roi(self):
         if self.roi:
             x0, y0, x1, y1 = self.roi
-            return self.shot.transmission[y0:y1, x0:x1]
+            return self.fit_data[y0:y1, x0:x1]
 
-        return self.shot.transmission
-
-    @property
-    def absorption_roi(self):
-        """Absorption pixel matrix bounded by the region of interest."""
-        return 1 - self.transmission_roi
+        return self.fit_data
 
     @property
     def peak(self):
         """Returns x, y, z of brightest pixel in absorption ROI"""
-        y, x = np.unravel_index(
-            np.argmax(self.absorption_roi), self.absorption_roi.shape
-        )
-        z = self.absorption_roi[y, x]
+        y, x = np.unravel_index(np.argmax(self.fit_data_roi), self.fit_data_roi.shape)
+        z = self.fit_data_roi[y, x]
 
         if self.roi:
             x += self.roi[0]
@@ -342,8 +372,8 @@ class ShotFit(ABC):
             np.linspace(min(x_v), max(x_v), v_length, endpoint=False),
             np.linspace(min(y_v), max(y_v), v_length, endpoint=False),
         )
-        h_data = self.shot.absorption_raw[ys_h.astype("int"), xs_h.astype("int")]
-        v_data = self.shot.absorption_raw[ys_v.astype("int"), xs_v.astype("int")]
+        h_data = self.fit_data_raw[ys_h.astype("int"), xs_h.astype("int")]
+        v_data = self.fit_data_raw[ys_v.astype("int"), xs_v.astype("int")]
         return (xs_h, ys_h, h_data), (xs_v, ys_v, v_data)
 
     @abstractmethod
@@ -403,7 +433,12 @@ class ShotFit2D(ShotFit):
             else:
                 x_c, y_c, A = self.peak
 
-        model.set_param_hint("A", value=A, min=0, max=2)
+        if self.fit_density:
+            max_A = 6
+        else:
+            max_A = 1.5
+
+        model.set_param_hint("A", value=A, min=0, max=max_A)
         model.set_param_hint("x0", value=x_c, min=x0, max=x1, vary=vary_center)
         model.set_param_hint("y0", value=y_c, min=y0, max=y1, vary=vary_center)
 
@@ -414,9 +449,16 @@ class ShotFit2D(ShotFit):
         )
         model.set_param_hint("z0", min=-1, max=1, vary=self.vary_z0)
 
-        logging.info("Using guess: x0=%.2f, y0=%.2f, sx=%.2f, sy=%.2f, A=%.2f", x_c, y_c, x_s, y_s, A)
+        logging.info(
+            "Using guess: x0=%.2f, y0=%.2f, sx=%.2f, sy=%.2f, A=%.2f",
+            x_c,
+            y_c,
+            x_s,
+            y_s,
+            A,
+        )
         result = model.fit(
-            np.ravel(self.shot.absorption[::5]),
+            np.ravel(self.fit_data[::5]),
             x=x_mg[::5],
             y=y_mg[::5],
             sx=x_s,
@@ -447,8 +489,8 @@ class ShotFit1DSummed(ShotFit):
 
         x_mg, y_mg = np.arange(self.shot.width), np.arange(self.shot.height)
         x_data, y_data = (
-            np.sum(self.shot.absorption, axis=0),
-            np.ravel(np.sum(self.shot.absorption, axis=1)),
+            np.sum(self.fit_data, axis=0),
+            np.ravel(np.sum(self.fit_data, axis=1)),
         )
         model = GaussianModel()
 
@@ -459,18 +501,15 @@ class ShotFit1DSummed(ShotFit):
 
     def eval(self, *, x, y):
         """Evaluates the fit at the given coordinates (proxy for ModelResult)."""
-        return None
+        x = self.result[0].eval(x=x)
+        y = self.result[1].eval(x=y)
+        scale = self.shot.width * self.shot.height
+        return np.sqrt(np.multiply(np.square(x), np.square(y))) / scale
 
     @property
     def best_values(self):
-        amplitude = np.mean(
-            (
-                self.result[0].params["height"].value / self.shot.height,
-                self.result[1].params["height"].value / self.shot.width,
-            )
-        )
         return {
-            "A": amplitude,
+            "A": 1,  # TODO:  calculate
             "x0": self.result[0].best_values["center"],
             "y0": self.result[1].best_values["center"],
             "sx": self.result[0].best_values["sigma"],

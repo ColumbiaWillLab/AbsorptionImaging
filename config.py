@@ -22,6 +22,7 @@ class Config(configparser.ConfigParser):
 
         # Non-persistent attributes
         self.fit = True
+        self.fit_2D = True
         self.roi_enabled = False
         self.fix_center = False
 
@@ -30,11 +31,13 @@ class Config(configparser.ConfigParser):
         with open(self.filename, "w") as configfile:
             self.write(configfile, space_around_delimiters=False)
 
+    ##### Camera Settings #####
     @property
     def pixel_size(self):
         """Camera pixel size in mm."""
         return self.getfloat("camera", "pixel_size") * 1e-3
 
+    ##### Beam Settings #####
     @property
     def magnification(self):
         """Imaging beam magnification ratio through optical path to camera."""
@@ -60,11 +63,13 @@ class Config(configparser.ConfigParser):
         """Imaging beam linewidth in angular MHz."""
         return self.getfloat("beam", "linewidth") * 2 * np.pi
 
+    ##### Plot Settings #####
     @property
     def colormap(self):
         """Numpy colormap name."""
         return self.get("plot", "colormap")
 
+    ##### Atom Settings #####
     @property
     def repump_time(self):
         """Repump time in ms."""
@@ -74,6 +79,19 @@ class Config(configparser.ConfigParser):
     def atom_mass(self):
         """Atom mass in kg."""
         return self.getfloat("atoms", "mass")
+
+    ##### Fit Settings #####
+    @property
+    def fit_atom_density(self):
+        """If True, fits are done against the atom density (-ln(OD))."""
+        try:
+            return self.getboolean("fit", "fit_atom_density")
+        except configparser.NoOptionError:
+            return False
+
+    @fit_atom_density.setter
+    def fit_atom_density(self, val):
+        self["fit"]["fit_atom_density"] = str(val)
 
     @property
     def fix_theta(self):

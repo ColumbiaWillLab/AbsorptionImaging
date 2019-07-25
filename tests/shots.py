@@ -8,8 +8,8 @@ path = "/Users/liuhenry/Dev/WillLab/AbsorptionImaging/tests/data/tricky/Raw_2019
 bmp_paths = [f"{path}_{i}.bmp" for i in range(1, 4)]
 
 shot = shots.Shot(name="path", bmp_paths=bmp_paths)
-fit = shot.fit_2D(config)
-print(fit.result.fit_report())
+shot.run_fit(config)
+print(shot.fit.best_fit_lines)
 fig = plt.figure()
 shot.plot(fig)
 plt.show()

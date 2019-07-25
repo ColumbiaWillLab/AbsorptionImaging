@@ -36,10 +36,11 @@ class ShotPresenter:
         self.app.queue(self.display_shot, shot)  # Display raw aborption image
 
         if config.fit:
-            shot.fit_2D(config)
+            shot.run_fit(config)
             self.app.queue(self.display_shot, shot)  # Display fit overlay
 
         figure = Figure(figsize=(8, 5))
+        shot.plot(figure)
         figure.savefig(_output_path(name), dpi=150)
 
         self.app.sequence_presenter.add_shot(shot)
@@ -80,8 +81,12 @@ class ShotPresenter:
         self.worker.submit(self.refit_shot, self.current_shot)
 
     def refit_shot(self, shot):
-        shot.fit_2D(config)
-        self.app(self.display_shot, shot)
+        shot.clear_fit()
+        self.app.queue(self.display_shot, shot)
+
+        if config.fit:
+            shot.run_fit(config)
+            self.app.queue(self.display_shot, shot)
 
 
 def _output_path(name):

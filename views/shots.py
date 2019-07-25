@@ -102,7 +102,7 @@ class ShotFit(ttk.Frame):
 
         # Fit Parameters (uneditable)
         params_frame = ttk.Frame(self)
-        params_frame.pack(side="left", fill="y", expand=True)
+        params_frame.pack(side="left", expand=True, pady=15)
         keys = ["N", "A", "x0", "y0", "sx", "sy", "theta", "z0"]
         labels = ["N", "A", "x_0", "y_0", "σ_x", "σ_y", "θ", "z_0"]
         for l_idx, lbl in enumerate(labels):
@@ -114,7 +114,7 @@ class ShotFit(ttk.Frame):
             self.fit_params[keys[f_idx]] = entry
 
         options_frame = ttk.Frame(self)
-        options_frame.pack(side="left", fill="y", expand=True)
+        options_frame.pack(side="left", expand=True, pady=15)
 
         roi_control = RegionOfInterestControl(options_frame)
         roi_control.pack(fill="x", expand=True)
@@ -313,6 +313,34 @@ class FitControl(ttk.LabelFrame):
         )
         enable_fit_btn.grid(row=1, column=0, sticky="w")
 
+        self.fit_against = tk.StringVar(
+            self, name="fit_against", value=self._get_fit_against()
+        )
+        fit_against_options = ("Atom Density", "Absorption OD")
+        ttk.Label(self, text="Fit Against: ").grid(row=2, column=0)
+        fa_menu = ttk.OptionMenu(
+            self,
+            self.fit_against,
+            self.fit_against.get(),
+            *fit_against_options,
+            command=self._set_fit_against,
+        )
+        fa_menu.configure(width=10)
+        fa_menu.grid(row=2, column=1)
+
+    def _get_fit_against(self):
+        if config.fit_atom_density:
+            return "Atom Density"
+        else:
+            return "Absorption OD"
+
+    def _set_fit_against(self, val):
+        if val == "Atom Density":
+            config.fit_atom_density = True
+        else:
+            config.fit_atom_density = False
+        config.save()
+
     def _toggle_fix_theta(self):
         config.fix_theta = self.fix_theta.get()
         config.save()
@@ -331,24 +359,27 @@ class ExperimentParams(ttk.Frame):
         self.master = master
         self.config_params = {}
 
+        frame = ttk.Frame(self)
+        frame.pack(expand=True)
+
         p_idx = 0
         for section in ("camera", "beam"):
             for key in config[section].keys():
                 text = key.replace("_", " ").capitalize()
-                ttk.Label(self, text=text).grid(row=p_idx, column=0)
+                ttk.Label(frame, text=text).grid(row=p_idx, column=0)
 
                 units = type(config).units.get(section, {}).get(key)
                 if units:
-                    ttk.Label(self, text=units).grid(row=p_idx, column=2)
+                    ttk.Label(frame, text=units).grid(row=p_idx, column=2)
 
-                entry = FloatEntry(self, state="normal")
+                entry = FloatEntry(frame, state="normal")
                 entry.grid(row=p_idx, column=1)
                 entry.insert(0, config[section].getfloat(key))
                 self.config_params[f"{section}.{key}"] = entry
 
                 p_idx += 1
 
-        save = ttk.Button(self, text="Save", command=self._save_config)
+        save = ttk.Button(frame, text="Save", command=self._save_config)
         save.grid(row=p_idx, column=1)
 
     def _save_config(self):

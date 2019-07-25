@@ -30,15 +30,17 @@ class MplFigure(ttk.Frame):
 class PlotSettings(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        self.master = master
+
+        frame = ttk.Frame(self)
+        frame.pack(expand=True)
 
         self.colormap = tk.StringVar(
-            self, name="colormap", value=config.get("plot", "colormap")
+            frame, name="colormap", value=config.get("plot", "colormap")
         )
         color_options = ("cividis", "viridis", "Greys")
-        ttk.Label(self, text="Colormap").grid(row=0, column=0)
+        ttk.Label(frame, text="Colormap").grid(row=0, column=0)
         ttk.OptionMenu(
-            self,
+            frame,
             self.colormap,
             self.colormap.get(),
             *color_options,
