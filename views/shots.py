@@ -245,10 +245,10 @@ class CenterControl(ttk.LabelFrame):
         self.center_x.bind("<Return>", self._update_center)
         self.center_y.bind("<Return>", self._update_center)
 
-        self.last_shot_center = ttk.Button(
-            self, text="Last Shot", command=self._fill_last_shot_center
+        self.current_shot_center = ttk.Button(
+            self, text="Current Shot", command=self._fill_current_shot_center
         )
-        self.last_shot_center.grid(row=1, column=1, columnspan=2)
+        self.current_shot_center.grid(row=1, column=1, columnspan=2)
 
     def _update_center(self, event=None):
         x, y = self.center_x.var.get(), self.center_y.var.get()
@@ -270,17 +270,16 @@ class CenterControl(ttk.LabelFrame):
         if config.fix_center:
             self._update_center()
 
-    def _fill_last_shot_center(self):
-        try:
-            # TODO: this logic probably should live in the presenter
-            shot = self.presenter.shot_presenter.recent_shots[-1]
+    def _fill_current_shot_center(self):
+        shot = self.presenter.shot_presenter.current_shot
+        if shot:
             if shot.fit:
                 self.center_x.var.set(shot.fit.best_values["x0"])
                 self.center_y.var.set(shot.fit.best_values["y0"])
                 self._update_center()
             else:
                 logging.warning("Shot has no 2D Gaussian fit.")
-        except IndexError:
+        else:
             logging.error("No last shot to pull from!")
 
 
@@ -316,7 +315,7 @@ class FitControl(ttk.LabelFrame):
         self.fit_against = tk.StringVar(
             self, name="fit_against", value=self._get_fit_against()
         )
-        fit_against_options = ("Atom Density", "Absorption OD")
+        fit_against_options = ("Optical Density", "Raw Absorption")
         ttk.Label(self, text="Fit Against: ").grid(row=2, column=0)
         fa_menu = ttk.OptionMenu(
             self,
@@ -325,20 +324,20 @@ class FitControl(ttk.LabelFrame):
             *fit_against_options,
             command=self._set_fit_against,
         )
-        fa_menu.configure(width=10)
+        fa_menu.configure(width=11)
         fa_menu.grid(row=2, column=1)
 
     def _get_fit_against(self):
-        if config.fit_atom_density:
-            return "Atom Density"
+        if config.fit_optical_density:
+            return "Optical Density"
         else:
-            return "Absorption OD"
+            return "Raw Absorption"
 
     def _set_fit_against(self, val):
-        if val == "Atom Density":
-            config.fit_atom_density = True
+        if val == "Optical Density":
+            config.fit_optical_density = True
         else:
-            config.fit_atom_density = False
+            config.fit_optical_density = False
         config.save()
 
     def _toggle_fix_theta(self):

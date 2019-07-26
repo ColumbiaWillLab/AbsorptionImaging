@@ -79,7 +79,7 @@ class Shot:
         threshold = 7
         transmission = np.divide(atoms, light, where=light > threshold)
         transmission[light <= threshold] = 1
-        np.clip(transmission, a_min=-0.1, a_max=1.5)
+        np.clip(transmission, a_min=0, a_max=1, out=transmission)
 
         return transmission
 
@@ -89,10 +89,10 @@ class Shot:
         return 1 - self.transmission
 
     @cachedproperty
-    def atom_density(self):
-        return np.clip(
-            -np.log(self.transmission, where=self.transmission > 0), a_min=0, a_max=6
-        )
+    def optical_density(self):
+        smoothed_transmission = gaussian_filter(self.transmission, sigma=1)
+        od = -np.log(smoothed_transmission, where=smoothed_transmission > 0)
+        return od
 
     @property
     def fit(self):
@@ -104,9 +104,9 @@ class Shot:
         self.clear_fit()
 
         if cfg.fit_2D:
-            self.run_fit_2D(cfg)
+            return self.run_fit_2D(cfg)
         else:
-            self.run_fit_1D_summed(cfg)
+            return self.run_fit_1D_summed(cfg)
 
     def run_fit_2D(self, cfg):
         self.run_fit_1D_summed(cfg)
@@ -121,7 +121,7 @@ class Shot:
 
         self.fit_2D = ShotFit2D(
             self,
-            fit_density=cfg.fit_atom_density,
+            fit_density=cfg.fit_optical_density,
             roi=roi,
             center=center,
             fix_theta=cfg.fix_theta,
@@ -131,14 +131,14 @@ class Shot:
         return self.fit_2D
 
     def run_fit_1D_summed(self, cfg):
-        self.fit_1D = ShotFit1DSummed(self, fit_density=cfg.fit_atom_density)
+        self.fit_1D = ShotFit1DSummed(self, fit_density=cfg.fit_optical_density)
         return self.fit_1D
 
     def clear_fit(self):
         self.fit_2D = None
         self.fit_1D = None
 
-    @cachedproperty
+    @property
     def atom_number(self):
         """Calculates the total atom number from the transmission ROI values."""
         # sodium and camera parameters
@@ -148,26 +148,25 @@ class Shot:
         )  # off resonance
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
-        data = self.transmission
+        density = self.optical_density
         if self.fit:
             if self.fit.roi:
                 x0, y0, x1, y1 = self.fit.roi
-                data = data[x0:x1, y0:y1]
+                density = density[x0:x1, y0:y1]
             else:
-                data = data[self.fit.sigma_mask]
+                density = density[self.fit.sigma_mask]
 
-        density = -np.log(data, where=data > 0)
         return (area / sigma) * np.sum(density) / 0.866  # Divide by 1.5-sigma area
 
     def plot(self, fig, *args, **kwargs):
         fig.clf()
 
-        if config.fit_atom_density:
+        if config.fit_optical_density:
             nmax = 6.0
-            img = self.atom_density
+            img = self.optical_density
         else:
             nmax = 1.0
-            img = self.absorption_raw
+            img = self.absorption
 
         norm = (-0.1, nmax)
         color_norm = colors.Normalize(*norm)
@@ -282,14 +281,14 @@ class ShotFit(ABC):
     @cachedproperty
     def fit_data(self):
         if self.fit_density:
-            return gaussian_filter(self.shot.atom_density, sigma=3)
+            return self.shot.optical_density
         else:
             return gaussian_filter(self.shot.absorption, sigma=3)
 
     @property
     def fit_data_raw(self):
         if self.fit_density:
-            return self.shot.atom_density
+            return self.shot.optical_density
         else:
             return self.shot.absorption
 
@@ -326,7 +325,7 @@ class ShotFit(ABC):
         contour_levels = self.eval(x=x, y=y).reshape((3, 3))
         return np.diag(contour_levels)
 
-    @cachedproperty
+    @property
     def sigma_mask(self):
         """Returns a numpy mask of pixels within the 2-sigma limit of the model (no ROI)"""
         bp_2D = self.best_values

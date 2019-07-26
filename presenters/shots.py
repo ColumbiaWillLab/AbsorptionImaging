@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from datetime import date
 from collections import deque
+from threading import Lock
 
 from matplotlib.figure import Figure
 
@@ -23,6 +24,8 @@ class ShotPresenter:
         self.recent_shots = deque(maxlen=15)
         self.current_shot = None
         self.shotlist_selection = ()
+
+        self.recent_shots_lock = Lock()
 
     ##### Non-GUI methods #####
     def process_shot(self, name, paths):
@@ -46,12 +49,13 @@ class ShotPresenter:
         self.app.sequence_presenter.add_shot(shot)
 
     def _update_recent_shots(self, shot):
-        if shot in self.recent_shots:
-            idx = self.recent_shots.index(shot)
-            self.recent_shots.remove(shot)
-            self.recent_shots.insert(idx, shot)
-        else:
-            self.recent_shots.append(shot)
+        with self.recent_shots_lock:
+            if shot in self.recent_shots:
+                idx = self.recent_shots.index(shot)
+                self.recent_shots.remove(shot)
+                self.recent_shots.insert(idx, shot)
+            else:
+                self.recent_shots.append(shot)
 
     ##### GUI methods #####
     @mainthread
@@ -66,8 +70,9 @@ class ShotPresenter:
         else:
             self.fit_view.display({"N": shot.atom_number})
 
-        self.list_view.refresh(self.recent_shots)
-        self.list_view.focus(shot)
+        with self.recent_shots_lock:
+            self.list_view.refresh(self.recent_shots)
+            self.list_view.focus(shot)
 
     @mainthread
     def display_recent_shot(self, idx):

@@ -82,16 +82,16 @@ class Config(configparser.ConfigParser):
 
     ##### Fit Settings #####
     @property
-    def fit_atom_density(self):
+    def fit_optical_density(self):
         """If True, fits are done against the atom density (-ln(OD))."""
         try:
-            return self.getboolean("fit", "fit_atom_density")
+            return self.getboolean("fit", "fit_optical_density")
         except configparser.NoOptionError:
             return False
 
-    @fit_atom_density.setter
-    def fit_atom_density(self, val):
-        self["fit"]["fit_atom_density"] = str(val)
+    @fit_optical_density.setter
+    def fit_optical_density(self, val):
+        self["fit"]["fit_optical_density"] = str(val)
 
     @property
     def fix_theta(self):
