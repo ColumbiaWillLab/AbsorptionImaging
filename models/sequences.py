@@ -134,6 +134,6 @@ class AtomNumberOptimization(ShotSequence):
 
         plt.plot(self.x, self.y[1], "o", label=self.y[0])
 
-        plt.set_ylabel("Atom Number")
+        plt.set_ylabel(self.y[0])
 
         return fig

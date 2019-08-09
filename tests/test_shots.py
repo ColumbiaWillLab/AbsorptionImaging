@@ -33,12 +33,9 @@ def test_atom_number(cfg, shot):
     """Numerical sanity checks for atom number."""
     # Whole Image
     whole_image = shot.atom_number
-    testing.assert_approx_equal(whole_image, 2.22e9, significant=2)
+    testing.assert_approx_equal(whole_image / 0.866, 2.22e9, significant=2)
 
     # Sigma Masked Image
     shot.run_fit(cfg)
     sigma_masked = shot.atom_number
     testing.assert_approx_equal(sigma_masked, 2.22e9, significant=2)
-
-    # Masked atom number should be less than whole atom number (removes noise)
-    assert sigma_masked < whole_image

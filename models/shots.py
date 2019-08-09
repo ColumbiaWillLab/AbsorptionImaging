@@ -149,14 +149,16 @@ class Shot:
         area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
 
         density = self.optical_density
+        scale = 1
         if self.fit:
             if self.fit.roi:
                 x0, y0, x1, y1 = self.fit.roi
                 density = density[x0:x1, y0:y1]
             else:
                 density = density[self.fit.sigma_mask]
+                scale = 0.866
 
-        return (area / sigma) * np.sum(density) / 0.866  # Divide by 1.5-sigma area
+        return (area / sigma) * np.sum(density) / scale  # Divide by 1.5-sigma area
 
     def plot(self, fig, *args, **kwargs):
         fig.clf()

@@ -42,10 +42,12 @@ class ShotPresenter:
             shot.run_fit(config)
             self.app.queue(self.display_shot, shot)  # Display fit overlay
 
+        # Save to png output
         figure = Figure(figsize=(8, 5))
         shot.plot(figure)
         figure.savefig(_output_path(name), dpi=150)
 
+        # Check if ToF or optimization
         self.app.sequence_presenter.add_shot(shot)
 
     def _update_recent_shots(self, shot):
@@ -64,12 +66,14 @@ class ShotPresenter:
         self.plot_view.display(shot)
         # TODO: plotting is done in the main thread - any way to pass figure in?
 
+        # Update fit params
         self.fit_view.clear()
         if shot.fit:
             self.fit_view.display(dict({"N": shot.atom_number}, **shot.fit.best_values))
         else:
             self.fit_view.display({"N": shot.atom_number})
 
+        # Synchronize recent shots view with data
         with self.recent_shots_lock:
             self.list_view.refresh(self.recent_shots)
             self.list_view.focus(shot)
