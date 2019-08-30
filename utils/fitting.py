@@ -1,20 +1,24 @@
+"""
+General fitting helpers
+"""
 import functools
 
 import numpy as np
 
 
 def ravel(func):
+    """Decorator that ravels the return value of the decorated function."""
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return np.ravel(func(*args, **kwargs))
 
-    wrapper._decorator_name = "ravel"
     return wrapper
 
 
 def gaussian_2D(x, y, A, x0, y0, sx, sy, theta=0, z0=0):
     """Takes a meshgrid of x, y and returns the gaussian computed across all values.
-    See https://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function for more info"""
+    See https://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function"""
     cos_sq = np.square(np.cos(theta))
     sin_sq = np.square(np.sin(theta))
     sin2th = np.sin(2 * theta)
