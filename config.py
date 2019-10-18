@@ -46,7 +46,7 @@ class Config(configparser.ConfigParser):
     @property
     def physical_scale(self):
         """Pixel to real-space size in mm."""
-        return self.pixel_size * self.magnification
+        return self.pixel_size * (1/self.magnification)
 
     @property
     def wavelength(self):

@@ -37,7 +37,7 @@ class PlotSettings(ttk.Frame):
         self.colormap = tk.StringVar(
             frame, name="colormap", value=config.get("plot", "colormap")
         )
-        color_options = ("cividis", "viridis", "Greys")
+        color_options = ("cividis", "viridis", "Professor Mode")
         ttk.Label(frame, text="Colormap").grid(row=0, column=0)
         ttk.OptionMenu(
             frame,
@@ -48,5 +48,8 @@ class PlotSettings(ttk.Frame):
         ).grid(row=0, column=1)
 
     def save_config(self, name, val):
-        config.set("plot", name, value=val)
+        if val == "Professor Mode":
+            config.set("plot", name, value="Greys")
+        else:
+            config.set("plot", name, value=val)
         config.save()
