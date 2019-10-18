@@ -121,7 +121,9 @@ class SequenceParams(ttk.Frame):
         self.presenter = presenter
         self.run = run
         self.fit_selected = fit_selected
-        self.autofill = autofill
+        self.autofillstart = autofillstart
+        self.autofillend = autofillend
+        self.autofillstep = autofillstep
 
         super().__init__(self.master)
 
@@ -179,5 +181,5 @@ class SequenceParams(ttk.Frame):
         afstep = float(autofillstep.get())
         aflist = np.arange(afstart,afend,afstep)
         for x in aflist:
-            st.insert(tk.INSERT,x)
-            st.insert(tk.INSERT,'\n')
+            self.st.insert(tk.INSERT,x)
+            self.st.insert(tk.INSERT,'\n')
