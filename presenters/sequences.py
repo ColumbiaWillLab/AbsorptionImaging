@@ -72,6 +72,3 @@ class SequencePresenter:
             )
             return False
         return selection
-
-    def _autofill(self, params):
-        logging.info("Autofilled String: %s", str(params))

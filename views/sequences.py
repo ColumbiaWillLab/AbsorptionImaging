@@ -121,9 +121,7 @@ class SequenceParams(ttk.Frame):
         self.presenter = presenter
         self.run = run
         self.fit_selected = fit_selected
-        self.autofillstart = autofillstart
-        self.autofillend = autofillend
-        self.autofillstep = autofillstep
+
 
         super().__init__(self.master)
 
@@ -154,6 +152,9 @@ class SequenceParams(ttk.Frame):
         autofill_btn = ttk.Button(self, text="Autofill", command=self._autofill)
         autofill_btn.grid(row=7,column=1)
 
+        self.autofillstart = autofillstart
+        self.autofillend = autofillend
+        self.autofillstep = autofillstep
         self.st = st
 
     def _check_sequence(self):
@@ -175,10 +176,15 @@ class SequenceParams(ttk.Frame):
         getattr(self.presenter.sequence_presenter, self.fit_selected)(vals)
 
     def _autofill(self):
-        """Autofills scrolled text based on input start,end,step variables"""
-        afstart = float(autofillstart.get())
-        afend = float(autofillend.get())
-        afstep = float(autofillstep.get())
+        """Autofills scrolled text box based on input start,end,step variables"""
+        self.st.delete('1.0',tk.END)
+        try:
+            afstart = float(self.autofillstart.get())
+            afend = float(self.autofillend.get())
+            afstep = float(self.autofillstep.get())
+        except ValueError:
+            tk.messagebox.showerror("Autofill List:", "Invalid Entry!")
+
         aflist = np.arange(afstart,afend,afstep)
         for x in aflist:
             self.st.insert(tk.INSERT,x)
