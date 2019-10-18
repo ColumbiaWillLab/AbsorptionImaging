@@ -121,19 +121,36 @@ class SequenceParams(ttk.Frame):
         self.presenter = presenter
         self.run = run
         self.fit_selected = fit_selected
+        self.autofill = autofill
 
         super().__init__(self.master)
 
-        ttk.Label(self, text="Parameter:").pack()
+        ttk.Label(self, text="Parameter:").grid(row=0, column=0)
+        ttk.Label(self, text="Autofill:").grid(row=0, column=1)
 
-        st = tkst.ScrolledText(self, state="normal", height=12, width=10)
-        st.pack(pady=(0, 5))
+        st = tkst.ScrolledText(self, state="normal", height=10, width=10)
+        st.grid(row=1,column=0,pady=(0, 5),rowspan=5)
 
         run_btn = ttk.Button(self, text="Run", command=self._run)
-        run_btn.pack()
+        run_btn.grid(row=6,column=0)
 
         fit_selected = ttk.Button(self, text="Fit Selected", command=self._fit_selected)
-        fit_selected.pack()
+        fit_selected.grid(row=7,column=0)
+
+        ttk.Label(self, text="Start:").grid(row=1, column=1)
+        autofillstart = ttk.Entry(self,width=5)
+        autofillstart.grid(row=2,column=1)
+
+        ttk.Label(self, text="End:").grid(row=3, column=1)
+        autofillend = ttk.Entry(self,width=5)
+        autofillend.grid(row=4,column=1)
+
+        ttk.Label(self, text="Step:").grid(row=5, column=1)
+        autofillstep = ttk.Entry(self,width=5)
+        autofillstep.grid(row=6,column=1)
+
+        autofill_btn = ttk.Button(self, text="Autofill", command=self._autofill)
+        autofill_btn.grid(row=7,column=1)
 
         self.st = st
 
@@ -154,3 +171,13 @@ class SequenceParams(ttk.Frame):
     def _fit_selected(self):
         vals = self._check_sequence()
         getattr(self.presenter.sequence_presenter, self.fit_selected)(vals)
+
+    def _autofill(self):
+        """Autofills scrolled text based on input start,end,step variables"""
+        afstart = float(autofillstart.get())
+        afend = float(autofillend.get())
+        afstep = float(autofillstep.get())
+        aflist = np.arange(afstart,afend,afstep)
+        for x in aflist:
+            st.insert(tk.INSERT,x)
+            st.insert(tk.INSERT,'\n')
