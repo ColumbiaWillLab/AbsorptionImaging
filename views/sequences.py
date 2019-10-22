@@ -185,7 +185,7 @@ class SequenceParams(ttk.Frame):
         except ValueError:
             tk.messagebox.showerror("Autofill List:", "Invalid Entry!")
 
-        aflist = np.arange(afstart,afend,afstep)
+        aflist = np.around(np.arange(afstart,afend+afstep,afstep),3)
         for x in aflist:
             self.st.insert(tk.INSERT,x)
             self.st.insert(tk.INSERT,'\n')
