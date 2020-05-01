@@ -235,20 +235,19 @@ class ThreeROI(ttk.Frame):
 
         labels = ["A", "B", "C", "(A - B)/(A-C + B-C)"]
         keys = ["roia", "roib", "roic", "a_b_ratio"]
+        self.countentries = {}
         for l_indx, lbl in enumerate(labels):
             ttk.Label(counts_frame, text=lbl).grid(row=l_indx + 1, column=0)
-
-        for f_indx in range(len(keys)):
             entry = ttk.Entry(counts_frame, state="readonly")
-            entry.grid(row=f_indx + 1, column=1)
-            #self.presenter.shot_presenter.threeroi_counts[keys[f_indx]] = entry
+            entry.grid(row=l_indx + 1, column=1)
+            self.countentries[keys[l_indx]] = entry
 
     def _rerun_fit(self):
         self.presenter.shot_presenter.refit_current_shot()
 
     def display(self, threeroi_counts):
         for k, v in threeroi_counts.items():
-            entry = self.threeroi_counts[k]
+            entry = self.countentries[k]
             entry.configure(state="normal")
             entry.delete(0, "end")
             entry.insert(0, "{:.4g}".format(v))
@@ -259,21 +258,26 @@ class ThreeRegionOfInterestControl(ttk.LabelFrame):
         super().__init__(master, text="Three ROI")
         self.master = master
 
+        style = ttk.Style()
+        style.configure("R.TLabel", foreground="red")
+        style.configure("B.TLabel", foreground="blue")
+        style.configure("G.TLabel", foreground="green")
+
         # Defines labels for ROI grid
         # First ROI
-        ttk.Label(self, text="ROI A").grid(row=0, column=0)
+        ttk.Label(self, text="ROI A", style="R.TLabel").grid(row=0, column=0)
         ttk.Label(self, text="X").grid(row=0, column=1)
         ttk.Label(self, text="Y").grid(row=0, column=2)
         ttk.Label(self, text="Top Left").grid(row=1, column=0)
         ttk.Label(self, text="Bottom Right").grid(row=2, column=0)
         # Second ROI
-        ttk.Label(self, text="ROI B").grid(row=3, column=0)
+        ttk.Label(self, text="ROI B", style="B.TLabel").grid(row=3, column=0)
         ttk.Label(self, text="X").grid(row=3, column=1)
         ttk.Label(self, text="Y").grid(row=3, column=2)
         ttk.Label(self, text="Top Left").grid(row=4, column=0)
         ttk.Label(self, text="Bottom Right").grid(row=5,column=0)
         # Third ROI
-        ttk.Label(self, text="ROI C").grid(row=6, column=0)
+        ttk.Label(self, text="ROI C", style="G.TLabel").grid(row=6, column=0)
         ttk.Label(self, text="X").grid(row=6, column=1)
         ttk.Label(self, text="Y").grid(row=6, column=2)
         ttk.Label(self, text="Top Left").grid(row=7, column=0)
