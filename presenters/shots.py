@@ -14,12 +14,13 @@ from models import shots
 
 
 class ShotPresenter:
-    def __init__(self, app, worker, *, plot_view, fit_view, list_view):
+    def __init__(self, app, worker, *, plot_view, fit_view, list_view, threeroi_view):
         self.app = app
         self.worker = worker
         self.plot_view = plot_view
         self.fit_view = fit_view
         self.list_view = list_view
+        self.threeroi_view = threeroi_view
         # Stores data for past (maxlen) shots
         self.recent_shots = deque(maxlen=15)
         self.current_shot = None
