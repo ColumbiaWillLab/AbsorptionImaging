@@ -20,7 +20,7 @@ class ShotPresenter:
         self.plot_view = plot_view
         self.fit_view = fit_view
         self.list_view = list_view
-
+        # Stores data for past (maxlen) shots
         self.recent_shots = deque(maxlen=15)
         self.current_shot = None
         self.shotlist_selection = ()
@@ -78,6 +78,10 @@ class ShotPresenter:
             self.list_view.refresh(self.recent_shots)
             self.list_view.focus(shot)
 
+        if config.three_roi_enabled:
+            self.threeroi_view.threeroi_counts = shot.three_roi_atom_number
+            print(self.threeroi_view.threeroi_counts)
+
     @mainthread
     def display_recent_shot(self, idx):
         """Displays a shot in the recent_shot deque by idx."""
@@ -96,6 +100,7 @@ class ShotPresenter:
         if config.fit:
             shot.run_fit(config)
             self.app.queue(self.display_shot, shot)
+
 
 
 def _output_path(name):

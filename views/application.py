@@ -6,7 +6,7 @@ import tkinter.ttk as ttk
 
 from views.logs import LogTextBox
 from views.plots import MplFigure, PlotSettings
-from views.shots import ShotList, ShotFit, ExperimentParams
+from views.shots import ShotList, ShotFit, ExperimentParams, ThreeROI
 from views.sequences import ToFFit, AtomNumberOptimization
 
 
@@ -79,6 +79,7 @@ class MainWindow(ttk.Frame):
 
 class Tabs(ttk.Notebook):
     def __init__(self, master, presenter):
+
         self.master = master
         self.presenter = presenter
 
@@ -87,11 +88,13 @@ class Tabs(ttk.Notebook):
         self.shot_fit = ShotFit(self, self.presenter)
         self.tof_fit = ToFFit(self, self.presenter)
         self.atom_number_fit = AtomNumberOptimization(self, self.presenter)
+        self.three_roi_atom_count = ThreeROI(self, self.presenter)
         exp = ExperimentParams(self)
         settings = PlotSettings(self)
 
         self.add(self.shot_fit, text="Gaussian", padding=10)
         self.add(self.tof_fit, text="Temperature", padding=10)
         self.add(self.atom_number_fit, text="Atom # Optimization", padding=10)
+        self.add(self.three_roi_atom_count, text="Three ROIs", padding=10)
         self.add(exp, text="Experiment Settings", padding=10)
         self.add(settings, text="Plot Settings", padding=10)

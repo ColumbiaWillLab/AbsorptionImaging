@@ -141,7 +141,7 @@ class Shot:
     @property
     def atom_number(self):
         """Calculates the total atom number from the transmission ROI values."""
-        # sodium and camera parameters
+        # light and camera parameters
         sigma_0 = (3 / (2 * np.pi)) * np.square(config.wavelength)  # cross-section
         sigma = sigma_0 * np.reciprocal(
             1 + np.square(config.detuning / (config.linewidth / 2))
@@ -159,6 +159,38 @@ class Shot:
                 scale = 0.866
 
         return (area / sigma) * np.sum(density) / scale  # Divide by 1.5-sigma area
+
+    @property
+    def three_roi_atom_number(self):
+        """Calculates the atom number within each of the 3 ROIs and ratio of A and B from the transmission values."""
+        if config.three_roi_enabled and config.threeroi:
+            # light and camera parameters
+            sigma_0 = (3 / (2 * np.pi)) * np.square(config.wavelength)  # cross-section
+            sigma = sigma_0 * np.reciprocal(
+                1 + np.square(config.detuning / (config.linewidth / 2))
+            )  # off resonance
+            area = np.square(config.physical_scale * 1e-3)  # pixel area in SI units
+
+            density = self.optical_density
+            scale = 1
+
+            x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5 = config.threeroi
+
+            roia_count = (area/sigma) * np.sum(density[x0:x1, y0:y1]) / scale
+            roib_count = (area/sigma) * np.sum(density[x2:x3, y2:y3]) / scale
+            roic_count = (area/sigma) * np.sum(density[x4:x5, y4:y5]) / scale
+
+            a_b_ratio = (roia_count - roib_count)/(roia_count - roic_count + roib_count - roic_count)
+            # keys = ["roia", "roib", "roic", "a_b_ratio"]
+            return {
+            "roia": roia_count,  # TODO:  calculate
+            "roib": roib_count,
+            "roic": roic_count,
+            "a_b_ratio": a_b_ratio
+            }
+
+        else:
+            pass
 
     def plot(self, fig, *args, **kwargs):
         fig.clf()
@@ -185,6 +217,21 @@ class Shot:
                 (x0, y0), x1 - x0, y1 - y0, linewidth=1, edgecolor="r", facecolor="none"
             )
             image.add_patch(roi)
+
+        if config.three_roi_enabled and config.threeroi:
+            x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5 = config.threeroi
+            roia = patches.Rectangle(
+                (x0, y0), x1 - x0, y1 - y0, linewidth=1, edgecolor="r", facecolor="none"
+            )
+            image.add_patch(roia)
+            roib = patches.Rectangle(
+                (x2, y2), x3 - x2, y3 - y2, linewidth=1, edgecolor="b", facecolor="none"
+            )
+            image.add_patch(roib)
+            roic = patches.Rectangle(
+                (x4, y4), x5 - x4, y5 - y4, linewidth=1, edgecolor="g", facecolor="none"
+            )
+            image.add_patch(roic)
 
         if self.fit:
             x, y = self.meshgrid

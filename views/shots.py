@@ -7,6 +7,7 @@ import numpy as np
 from config import config
 
 from .components import FloatEntry
+from itertools import chain
 
 
 class ShotList(ttk.Frame):
@@ -208,6 +209,129 @@ class RegionOfInterestControl(ttk.LabelFrame):
                 self.toggle_roi.configure(text="Disable", state="active")
                 logging.debug("ROI enabled")
 
+
+class ThreeROI(ttk.Frame):
+    def __init__(self, master, presenter):
+        self.master = master
+        self.presenter = presenter
+
+        super().__init__(self.master)
+
+        options_frame = ttk.Frame(self)
+        options_frame.pack(side="left", expand=True, pady=15)
+
+        threeroi_control = ThreeRegionOfInterestControl(options_frame)
+        threeroi_control.pack(fill="x", expand=True)
+
+        rerun_fit_btn = ttk.Button(
+            options_frame, text="Rerun Fit", command=self._rerun_fit
+        )
+        rerun_fit_btn.pack(fill="x", expand=True, padx=10, pady=5)
+
+        counts_frame = ttk.Frame(self)
+        counts_frame.pack(side="right", expand=True, pady=15)
+
+        ttk.Label(counts_frame, text="Raw atom count in ROI").grid(row=0, column=0, columnspan=2)
+
+        labels = ["A", "B", "C", "(A - B)/(A-C + B-C)"]
+        keys = ["roia", "roib", "roic", "a_b_ratio"]
+        for l_indx, lbl in enumerate(labels):
+            ttk.Label(counts_frame, text=lbl).grid(row=l_indx + 1, column=0)
+
+        for f_indx in range(len(keys)):
+            entry = ttk.Entry(counts_frame, state="readonly")
+            entry.grid(row=f_indx + 1, column=1)
+            #self.presenter.shot_presenter.threeroi_counts[keys[f_indx]] = entry
+
+    def _rerun_fit(self):
+        self.presenter.shot_presenter.refit_current_shot()
+
+    def display(self, threeroi_counts):
+        for k, v in threeroi_counts.items():
+            entry = self.threeroi_counts[k]
+            entry.configure(state="normal")
+            entry.delete(0, "end")
+            entry.insert(0, "{:.4g}".format(v))
+            entry.configure(state="readonly")
+
+class ThreeRegionOfInterestControl(ttk.LabelFrame):
+    def __init__(self, master):
+        super().__init__(master, text="Three ROI")
+        self.master = master
+
+        # Defines labels for ROI grid
+        # First ROI
+        ttk.Label(self, text="ROI A").grid(row=0, column=0)
+        ttk.Label(self, text="X").grid(row=0, column=1)
+        ttk.Label(self, text="Y").grid(row=0, column=2)
+        ttk.Label(self, text="Top Left").grid(row=1, column=0)
+        ttk.Label(self, text="Bottom Right").grid(row=2, column=0)
+        # Second ROI
+        ttk.Label(self, text="ROI B").grid(row=3, column=0)
+        ttk.Label(self, text="X").grid(row=3, column=1)
+        ttk.Label(self, text="Y").grid(row=3, column=2)
+        ttk.Label(self, text="Top Left").grid(row=4, column=0)
+        ttk.Label(self, text="Bottom Right").grid(row=5,column=0)
+        # Third ROI
+        ttk.Label(self, text="ROI C").grid(row=6, column=0)
+        ttk.Label(self, text="X").grid(row=6, column=1)
+        ttk.Label(self, text="Y").grid(row=6, column=2)
+        ttk.Label(self, text="Top Left").grid(row=7, column=0)
+        ttk.Label(self,text="Bottom Right").grid(row=8, column=0)
+
+        self.three_roi_entries = []
+
+        for row in chain(range(1, 2 + 1), range(4, 5 + 1), range(7, 8 + 1)):
+            for col in range(1, 2 + 1):
+                var = tk.IntVar(None)
+                entry = FloatEntry(self, width=12, textvariable=var)
+                entry.var = var
+                entry.bind("<Return>", self._update_three_roi)
+                entry.grid(row=row, column=col)
+                self.three_roi_entries.append(entry)
+
+                if config.threeroi:
+                    if row == 1 or row == 2:
+                        var.set(config.threeroi[(row - 1) * 2 + (col - 1)])
+                    elif row == 4 or row == 5:
+                        var.set(config.threeroi[(row - 4) * 2 + (col - 1) + 4])
+                    elif row == 7 or row == 8:
+                        var.set(config.threeroi[(row - 7) * 2 + (col - 1) + 8])
+
+        self.toggle_three_roi = ttk.Button(self, text="Enable", command=self._toggle_three_roi)
+        self.toggle_three_roi.grid(row=9, column=1, columnspan=2)
+
+    def _toggle_three_roi(self):
+        if config.three_roi_enabled:
+            config.three_roi_enabled = False
+            self.toggle_three_roi.configure(text="Enable", state="normal")
+            logging.debug("Three ROI disabled")
+        else:
+            if self._update_three_roi():
+                config.three_roi_enabled = True
+                self.toggle_three_roi.configure(text="Disable", state="active")
+                logging.debug("Three ROI enabled")
+
+    def _update_three_roi(self, event=None):
+        try:
+            threeroi = tuple(int(v.var.get()) for v in self.three_roi_entries)
+        except ValueError:
+            logging.error("Malformed Three ROI params!")
+            return False
+        
+        if threeroi[0] < threeroi[2] and threeroi[1] < threeroi[3]:
+            if threeroi[4] < threeroi[6] and threeroi[5] < threeroi[7]:
+                if threeroi[8] < threeroi[10] and threeroi[9] < threeroi[11]:
+                    config.threeroi = threeroi
+                    config.save()
+                    logging.info("Updated region of interest: %s", str(threeroi))
+                    return True
+                else:
+                    logging.warning("Invalid ROI C params!")
+            else:
+                logging.warning("Invalid ROI B params!")
+        else:
+            logging.warning("Invalid ROI A params!")
 
 class CenterControl(ttk.LabelFrame):
     def __init__(self, master, presenter):

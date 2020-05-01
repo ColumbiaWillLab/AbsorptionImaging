@@ -24,6 +24,7 @@ class Config(configparser.ConfigParser):
         self.fit = True
         self.fit_2D = True
         self.roi_enabled = False
+        self.three_roi_enabled = False
         self.fix_center = False
 
     def save(self):
@@ -128,6 +129,18 @@ class Config(configparser.ConfigParser):
     @roi.setter
     def roi(self, tup):
         self["fit"]["roi"] = ",".join(map(str, tup))
+
+    @property
+    def threeroi(self):
+        """Tuple of (x0,y0,x1,y1,x2,y2,x3,y3,x4,y4,x5,y5) defining three regions of interests (0,1), (2,3), (4,5) for atom counting and subsequent subtraction."""
+        try:
+            return tuple(map(int, self.get("fit","threeroi").split(",")))
+        except (ValueError, configparser.NoOptionError):
+            return None
+
+    @threeroi.setter
+    def threeroi(self,tup):
+        self["fit"]["threeroi"] = ",".join(map(str, tup))
 
     @property
     def tof(self):
