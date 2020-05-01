@@ -26,9 +26,7 @@ To run the app without compliling, run __main__.py from main folder.
 
 To compile into a windows .exe package, push package to release. Wait 5 minutes for processing and testing.
 Using cmd:
-```json
-{
+```
 git tag v0.x.x
 git push origin v0.x.x
-}
 ```
