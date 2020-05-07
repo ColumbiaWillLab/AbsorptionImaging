@@ -158,6 +158,7 @@ class ShotFit(ttk.Frame):
 
 
 class RegionOfInterestControl(ttk.LabelFrame):
+    """Creates ROI object for user-defined cropping and processing of cropped image in gaussian fitting."""
     def __init__(self, master):
         super().__init__(master, text="ROI")
         self.master = master
@@ -211,6 +212,7 @@ class RegionOfInterestControl(ttk.LabelFrame):
 
 
 class ThreeROI(ttk.Frame):
+    """Creates object for three ROIs processing"""
     def __init__(self, master, presenter):
         self.master = master
         self.presenter = presenter
@@ -231,10 +233,10 @@ class ThreeROI(ttk.Frame):
         counts_frame = ttk.Frame(self)
         counts_frame.pack(side="right", expand=True, pady=15)
 
-        ttk.Label(counts_frame, text="Raw atom count in ROI").grid(row=0, column=0, columnspan=2)
+        ttk.Label(counts_frame, text="Background subtracted atom count in ROI").grid(row=0, column=0, columnspan=2)
 
-        labels = ["A", "B", "C", "(A - B)/(A-C + B-C)"]
-        keys = ["roia", "roib", "roic", "a_b_ratio"]
+        labels = ["A", "B", "BG/px", "(A - B)/(A + B)"]
+        keys = ["roia", "roib", "roibg", "a_b_ratio"]
         self.countentries = {}
         for l_indx, lbl in enumerate(labels):
             ttk.Label(counts_frame, text=lbl).grid(row=l_indx + 1, column=0)
@@ -254,6 +256,7 @@ class ThreeROI(ttk.Frame):
             entry.configure(state="readonly")
 
 class ThreeRegionOfInterestControl(ttk.LabelFrame):
+    """Creates object for user input to define the three separate ROI for atom number counting."""
     def __init__(self, master):
         super().__init__(master, text="Three ROI")
         self.master = master
@@ -277,7 +280,7 @@ class ThreeRegionOfInterestControl(ttk.LabelFrame):
         ttk.Label(self, text="Top Left").grid(row=4, column=0)
         ttk.Label(self, text="Bottom Right").grid(row=5,column=0)
         # Third ROI
-        ttk.Label(self, text="ROI C", style="G.TLabel").grid(row=6, column=0)
+        ttk.Label(self, text="ROI BG", style="G.TLabel").grid(row=6, column=0)
         ttk.Label(self, text="X").grid(row=6, column=1)
         ttk.Label(self, text="Y").grid(row=6, column=2)
         ttk.Label(self, text="Top Left").grid(row=7, column=0)
@@ -331,13 +334,14 @@ class ThreeRegionOfInterestControl(ttk.LabelFrame):
                     logging.info("Updated region of interest: %s", str(threeroi))
                     return True
                 else:
-                    logging.warning("Invalid ROI C params!")
+                    logging.warning("Invalid ROI BG params!")
             else:
                 logging.warning("Invalid ROI B params!")
         else:
             logging.warning("Invalid ROI A params!")
 
 class CenterControl(ttk.LabelFrame):
+    """Toggle object for fixing center of gaussian fit."""
     def __init__(self, master, presenter):
         self.master = master
         self.presenter = presenter
@@ -412,6 +416,7 @@ class CenterControl(ttk.LabelFrame):
 
 
 class FitControl(ttk.LabelFrame):
+    """Toggle object for triggering fit and not fitting."""
     def __init__(self, master):
         super().__init__(master, text="Fit")
         self.master = master
@@ -481,6 +486,15 @@ class FitControl(ttk.LabelFrame):
 
 
 class ExperimentParams(ttk.Frame):
+    """Tab for viewing and reconfiguring some experimental parameters,
+        "camera": {"pixel_size": "mm"},
+        "beam": {
+            "wavelength": "nm",
+            "magnification": "x",
+            "detuning": "MHz",
+            "linewidth": "MHz",
+
+    """
     def __init__(self, master):
         super().__init__(master)
         self.master = master
