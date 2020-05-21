@@ -17,6 +17,7 @@ class SequencePresenter:
 
     @mainthread
     def display_tof(self, tof):
+        # Updating GUI display
         self.plot_view.display(tof)
         self.fit_view.display(tof)
 
@@ -26,7 +27,7 @@ class SequencePresenter:
 
     def start_tof(self, times):
         self.current_tof = sequences.TimeOfFlight(times)
-        logging.info("Starting Time of Flight: %s", str(times))
+        logging.info("Starting Time of Flight (ms): %s", str(times))
 
     def start_atom_opt(self, params):
         self.current_atom_opt = sequences.AtomNumberOptimization(params)
@@ -58,6 +59,11 @@ class SequencePresenter:
     def _sequence_complete(self, sequence):
         if isinstance(sequence, sequences.TimeOfFlight):
             self.app.queue(self.display_tof, sequence)
+
+            # Saving tof params into logging.csv
+            logging.info("Updating logging.csv with tof params...")
+            logging.info(str([shot.name for shot in sequence.shots]), str(sequence.avg_temp), str(sequence.independent_var))
+
         elif isinstance(sequence, sequences.AtomNumberOptimization):
             self.app.queue(self.display_atom_opt, sequence)
 
