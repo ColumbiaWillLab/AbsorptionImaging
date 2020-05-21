@@ -1,4 +1,5 @@
 import logging
+import csv
 
 from pathlib import Path
 from datetime import date
@@ -47,6 +48,15 @@ class ShotPresenter:
         figure = Figure(figsize=(8, 5))
         shot.plot(figure)
         figure.savefig(_output_path(name), dpi=150)
+        # Saves fit params to log file
+        logging.info("Updating log for shot %s ", name)
+        with open(_output_log_path(name), 'w', newline='') as logfile:
+            fieldnames = ["timestamp","magnification"]
+            writer = csv.DictWriter(logfile, fieldnames = fieldnames)
+
+            writer.writeheader()
+            write.writerow({"timestamp" : name, "magnification" : config.magnification})
+        ### TODO: Update log file in rawdata folder processed x.
 
         # Check if ToF or optimization
         self.app.sequence_presenter.add_shot(shot)
@@ -109,3 +119,9 @@ def _output_path(name):
     output = Path("../Analysis Results/").joinpath(str(date.today()))
     output.mkdir(parents=True, exist_ok=True)
     return output.joinpath(f"{name}.png")
+
+def _output_log_path(name):
+    """Sets the path directory for generating a log file in the raw data folder"""
+    output = Path("../Raw Data/").joinpath(str(date.today()))
+    outputs.mkdir(parents=True, exists_ok=True)
+    return output.joinpath("logging.csv")
