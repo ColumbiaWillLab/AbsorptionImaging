@@ -1,9 +1,14 @@
 import logging
+import csv
+import os.path
+from os import path
 
+from pathlib import Path
+from datetime import date
 from utils.threading import mainthread
 
 from models import sequences
-
+from config import config
 
 class SequencePresenter:
     def __init__(self, app, worker, *, plot_view, fit_view):
@@ -62,7 +67,18 @@ class SequencePresenter:
 
             # Saving tof params into logging.csv
             logging.info("Updating logging.csv with tof params...")
-            logging.info(str([shot.name for shot in sequence.shots]), str(sequence.avg_temp), str(sequence.independent_var))
+
+            # Appends requisite data, neglect creation of file because sequence always comes after shot
+            # tof headers "tof_sequence", "time_sequence", "average_T (uK)"
+            with open(self._output_log_path(), 'a', newline='') as logfile:
+                writer = csv.DictWriter(logfile, fieldnames = config.logheader)
+                writer.writerow({"filename" : str([shot.name for shot in sequence.shots]),
+                             "magnification" : config.magnification,
+                             "atom number" : sequence.atom_number,
+                             "fitted shot" : config.fit,
+                             "tof_sequence" : True,
+                             "time_sequence" : sequence.t,
+                             "average_T (uK)" : str(sequence.avg_temp)})
 
         elif isinstance(sequence, sequences.AtomNumberOptimization):
             self.app.queue(self.display_atom_opt, sequence)
@@ -78,3 +94,9 @@ class SequencePresenter:
             )
             return False
         return selection
+
+    def _output_log_path(self):
+        """Sets the path directory for generating a log file in the raw data folder"""
+        output = Path("../Raw Data/").joinpath(str(date.today()))
+        output.mkdir(parents=True, exist_ok=True)
+        return output.joinpath("logging.csv")

@@ -67,6 +67,10 @@ class TimeOfFlight(ShotSequence):
         return np.square(self.independent_var + config.repump_time)
 
     @property
+    def t(self):
+        return np.array2string(self.independent_var + config.repump_time)
+
+    @property
     def y(self):
         return ("X", np.square(self.sigma_x)), ("Y", np.square(self.sigma_y))
 

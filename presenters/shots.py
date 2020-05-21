@@ -53,22 +53,21 @@ class ShotPresenter:
         # Saves fit params to log file
         logging.info("Updating log for shot %s ", name)
 
-        fieldnames = config.logheader # Pulls headers from config.ini
 
         # Checks if log file already exists, if not creates a new one
         if not path.exists(_output_log_path(name)):
             with open(_output_log_path(name), 'w', newline='') as logfile:
-                writer = csv.DictWriter(logfile, fieldnames = fieldnames)
+                writer = csv.DictWriter(logfile, fieldnames = config.logheader) # Pulls headers from config.ini
                 writer.writeheader()
 
         # Appends requisite data
         with open(_output_log_path(name), 'a', newline='') as logfile:
-            writer = csv.DictWriter(logfile, fieldnames = fieldnames)
+            writer = csv.DictWriter(logfile, fieldnames = config.logheader) # Pulls headers from config.ini
             writer.writerow({"filename" : name,
                              "magnification" : config.magnification,
                              "atom number" : shot.atom_number,
                              "fitted shot" : config.fit})
-        ### TODO: Update for writing the header and appending the variables
+
         # Check if ToF or optimization
         self.app.sequence_presenter.add_shot(shot)
 
