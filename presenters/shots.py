@@ -1,5 +1,7 @@
 import logging
 import csv
+import os.path
+from os import path
 
 from pathlib import Path
 from datetime import date
@@ -50,14 +52,23 @@ class ShotPresenter:
         figure.savefig(_output_path(name), dpi=150)
         # Saves fit params to log file
         logging.info("Updating log for shot %s ", name)
-        with open(_output_log_path(name), 'w', newline='') as logfile:
-            fieldnames = ["timestamp","magnification"]
+
+        fieldnames = config.logheader # Pulls headers from config.ini
+
+        # Checks if log file already exists, if not creates a new one
+        if not path.exists(_output_log_path(name)):
+            with open(_output_log_path(name), 'w', newline='') as logfile:
+                writer = csv.DictWriter(logfile, fieldnames = fieldnames)
+                writer.writeheader()
+
+        # Appends requisite data
+        with open(_output_log_path(name), 'a', newline='') as logfile:
             writer = csv.DictWriter(logfile, fieldnames = fieldnames)
-
-            writer.writeheader()
-            write.writerow({"timestamp" : name, "magnification" : config.magnification})
-        ### TODO: Update log file in rawdata folder processed x.
-
+            writer.writerow({"filename" : name,
+                             "magnification" : config.magnification,
+                             "atom number" : shot.atom_number,
+                             "fitted shot" : config.fit})
+        ### TODO: Update for writing the header and appending the variables
         # Check if ToF or optimization
         self.app.sequence_presenter.add_shot(shot)
 
@@ -123,5 +134,5 @@ def _output_path(name):
 def _output_log_path(name):
     """Sets the path directory for generating a log file in the raw data folder"""
     output = Path("../Raw Data/").joinpath(str(date.today()))
-    outputs.mkdir(parents=True, exists_ok=True)
+    output.mkdir(parents=True, exist_ok=True)
     return output.joinpath("logging.csv")

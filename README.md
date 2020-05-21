@@ -134,3 +134,6 @@ Using cmd:
 git tag v0.x.x
 git push origin v0.x.x
 ```
+
+## Logging.csv
+In each "../Raw Data/" folder a summary of relevant variables for reference is saved.

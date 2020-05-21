@@ -166,5 +166,10 @@ class Config(configparser.ConfigParser):
     def center(self, tup):
         self["fit"]["center"] = ",".join(map(str, tup))
 
+    @property
+    def logheader(self):
+        """Defines the headers of the logging.csv file saved in '../Raw Data/' folder."""
+        return ["filename", "magnification", "atom number", "fitted shot"]
+
 
 config = Config("config.ini")
