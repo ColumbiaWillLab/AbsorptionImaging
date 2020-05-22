@@ -136,4 +136,32 @@ git push origin v0.x.x
 ```
 
 ## Logging.csv
-In each "../Raw Data/" folder a summary of relevant variables for reference is saved.
+Every time a shot or sequence is processed, relevant variables are saved in logging.csv, found in the "../Raw Data/" folder.
+
+The index for the variables saved under the header are as follows:
+["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)"]
+
+1. filename 
+    returns shot.name / timestamp of the three shots
+    - str() single image by default
+    - list() for a processed sequence
+
+2. magnification
+    returns config.magnification
+
+3. atom number
+    returns the processed shot.atom_number
+    - float() for a single show
+    - array(float()) for tof sequence
+
+4. fitted shot
+    returns True if shot was fitted
+
+5. tof_sequence
+    returns True for processed tof_sequence
+
+6. time_sequence
+    returns list of user-input tof values
+
+7. average_T (uK)
+    returns fitted averaged temperature in uK for tof sequence
