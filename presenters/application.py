@@ -31,7 +31,8 @@ class MainWindowPresenter:
             plot_view=self.view.plot,
             fit_view=self.view.tabs.shot_fit,
             list_view=self.view.shot_list,
-            threeroi_view=self.view.tabs.three_roi_atom_count
+            threeroi_view=self.view.tabs.three_roi_atom_count,
+            settings_view=self.view.tabs.settings
         )
         self.sequence_presenter = SequencePresenter(
             self, self.worker, plot_view=self.view.plot, fit_view=self.view.tabs.tof_fit

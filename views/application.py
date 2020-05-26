@@ -90,11 +90,11 @@ class Tabs(ttk.Notebook):
         self.atom_number_fit = AtomNumberOptimization(self, self.presenter)
         self.three_roi_atom_count = ThreeROI(self, self.presenter)
         exp = ExperimentParams(self)
-        settings = Settings(self)
+        self.settings = Settings(self)
 
         self.add(self.shot_fit, text="Gaussian", padding=10)
         self.add(self.tof_fit, text="Temperature", padding=10)
         self.add(self.atom_number_fit, text="Atom # Optimization", padding=10)
         self.add(self.three_roi_atom_count, text="Three ROIs", padding=10)
         self.add(exp, text="Experiment Settings", padding=10)
-        self.add(settings, text="Settings", padding=10)
+        self.add(self.settings, text="Settings", padding=10)

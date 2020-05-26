@@ -14,16 +14,16 @@ from utils.threading import mainthread
 
 from config import config
 from models import shots
-from views.settings import Settings
 
 class ShotPresenter:
-    def __init__(self, app, worker, *, plot_view, fit_view, list_view, threeroi_view):
+    def __init__(self, app, worker, *, plot_view, fit_view, list_view, threeroi_view, settings_view):
         self.app = app
         self.worker = worker
         self.plot_view = plot_view
         self.fit_view = fit_view
         self.list_view = list_view
         self.threeroi_view = threeroi_view
+        self.settings_view = settings_view
         # Stores data for past (maxlen) shots
         self.recent_shots = deque(maxlen=15)
         self.current_shot = None
@@ -50,11 +50,16 @@ class ShotPresenter:
         figure = Figure(figsize=(8, 5))
         shot.plot(figure)
         figure.savefig(_output_path(name), dpi=150)
+
         # Saves fit params to log file
+        cmnts = self.settings_view.get_comment()
+        abratio = ""
+        threeroi_array = []
+        if config.three_roi_enabled: # only appends value if threeroi is enabled
+            abratio = shot.three_roi_atom_number["a_b_ratio"]
+            threeroi_array = config.threeroi
 
-        cmnts = Settings.get_comment
-
-        logging.info("Updating logging.csv for shot %s with comment %s ", name, cmnts)
+        logging.info("Updating logging.csv for shot %s with comment %s " % (name, cmnts))
 
         # Checks if log file already exists, if not creates a new one
         if not path.exists(_output_log_path(name)):
@@ -68,7 +73,10 @@ class ShotPresenter:
             writer.writerow({"filename" : name,
                              "magnification" : config.magnification,
                              "atom number" : shot.atom_number,
-                             "fitted shot" : config.fit})
+                             "fitted shot" : config.fit,
+                             "threeroi" : threeroi_array,
+                             "a_b_ratio" : abratio,
+                             "Comments" : cmnts})
 
         # Check if ToF or optimization
         self.app.sequence_presenter.add_shot(shot)
