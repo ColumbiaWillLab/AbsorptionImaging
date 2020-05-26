@@ -1,4 +1,4 @@
-# AbsorptionImaging v3.0.2b
+# AbsorptionImaging v0.3.2b
 
 ## Table of contents
 * [General info](#general-info)
