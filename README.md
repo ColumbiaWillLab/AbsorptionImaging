@@ -1,4 +1,4 @@
-# AbsorptionImaging v3.0.2
+# AbsorptionImaging v3.0.2b
 
 ## Table of contents
 * [General info](#general-info)
@@ -165,3 +165,13 @@ The index for the variables saved under the header are as follows:
 
 7. average_T (uK)
     returns fitted averaged temperature in uK for tof sequence
+
+8. "threeroi"
+    returns [] if threeroi is not enabled
+    returns three roi array() if enabled
+
+9. a_b_ratio
+    returns the calculated atom ratio between ROI A and ROI B if threeroi is enabled
+
+10. Comments
+    returns input string in "Settings" tab.
