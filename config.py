@@ -169,7 +169,7 @@ class Config(configparser.ConfigParser):
     @property
     def logheader(self):
         """Defines the headers of the logging.csv file saved in '../Raw Data/' folder."""
-        return ["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)"]
+        return ["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)", "Comments"]
 
 
 config = Config("config.ini")

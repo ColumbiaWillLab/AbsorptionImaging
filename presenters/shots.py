@@ -14,7 +14,7 @@ from utils.threading import mainthread
 
 from config import config
 from models import shots
-
+from views.settings import Settings
 
 class ShotPresenter:
     def __init__(self, app, worker, *, plot_view, fit_view, list_view, threeroi_view):
@@ -51,8 +51,10 @@ class ShotPresenter:
         shot.plot(figure)
         figure.savefig(_output_path(name), dpi=150)
         # Saves fit params to log file
-        logging.info("Updating log for shot %s ", name)
 
+        cmnts = Settings.get_comment
+
+        logging.info("Updating logging.csv for shot %s with comment %s ", name, cmnts)
 
         # Checks if log file already exists, if not creates a new one
         if not path.exists(_output_log_path(name)):
