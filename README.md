@@ -144,6 +144,9 @@ Every time a shot or sequence is processed, relevant variables are saved in logg
 
 The file structure for the HDF5 format is as follows:
 
+###File Structure
+```bash
+.
 logging.hdf5
 ├── HH:MM:SS
 ├── HH:MM:SS
@@ -153,6 +156,7 @@ logging.hdf5
 └── atomnum_sequence
     ├── HH:MM:SS
     └── HH:MM:SS
+```
 
 Each processed object is indexed by the 24hr timestamp (HH:MM:SS) it has been processed at. Each timestamp object contains the full dataset (atom,beam,dark), and can be identified via its variables.
 
