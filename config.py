@@ -167,9 +167,21 @@ class Config(configparser.ConfigParser):
         self["fit"]["center"] = ",".join(map(str, tup))
 
     @property
-    def logheader(self):
-        """Defines the headers of the logging.csv file saved in '../Raw Data/' folder."""
-        return ["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)", "threeroi", "a_b_ratio", "Comments"]
+    def logdict(self):
+        """Returns dictionary of all relevant config parameters"""
+        return {"fittedshot" : self.fit,
+                "fittedshot2D" : self.fit_2D,
+                "roi_enabled" : self.roi_enabled,
+                "three_roi_enabled" : self.three_roi_enabled,
+                "magnification(x)" : self.magnification,
+                "pixel_size(mm)" : self.pixel_size,
+                "wavelength(nm)" : self.wavelength,
+                "detuning(MHz)" : self.detuning,
+                "linewidth(MHz)" : self.linewidth,
+                "repump_time(ms)" : self.repump_time,
+                "atom_mass(kg)" : self.atom_mass
+            }
+        #return ["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)", "threeroi", "a_b_ratio", "Comments"]
 
 
 config = Config("config.ini")

@@ -1,8 +1,9 @@
 import logging
-import csv
 import os.path
 from os import path
 
+import h5py
+import time
 from pathlib import Path
 from datetime import date
 from utils.threading import mainthread
@@ -65,23 +66,35 @@ class SequencePresenter:
         if isinstance(sequence, sequences.TimeOfFlight):
             self.app.queue(self.display_tof, sequence)
 
-            # Saving tof params into logging.csv
-            logging.info("Updating logging.csv with tof params...")
+            # Saving tof params into logging.hdf5
+            logging.info("Updating logging.hdf5 with tof params...")
 
-            # Appends requisite data, neglect creation of file because sequence always comes after shot
-            # tof headers "tof_sequence", "time_sequence", "average_T (uK)"
-            with open(self._output_log_path(), 'a', newline='') as logfile:
-                writer = csv.DictWriter(logfile, fieldnames = config.logheader)
-                writer.writerow({"filename" : str([shot.name for shot in sequence.shots]),
-                             "magnification" : config.magnification,
-                             "atom number" : sequence.atom_number,
-                             "fitted shot" : config.fit,
-                             "tof_sequence" : True,
-                             "time_sequence" : sequence.t,
-                             "average_T (uK)" : str(sequence.avg_temp)})
+            # Appends sequence information as a subgroup tof optimization
+            with h5py.File(self._output_log_path(), "a") as logfile:
+                lf = logfile.create_group("/tof_sequence/" + str(time.strftime('%H:%M:%S'))) # Sets name to be timestamp in subgroup
+                lf.attrs['filename'] = str([shot.name for shot in sequence.shots])
+                lf.create_dataset("atom_number", data = sequence.atom_number)
+                lf.create_dataset("time_sequence", data = sequence.t)
+                lf.attrs['average_T(uK)'] = str(sequence.avg_temp)
+
+                for label, value in config.logdict.items(): # Appends config snapshot
+                    lf.attrs[label] = value
+
 
         elif isinstance(sequence, sequences.AtomNumberOptimization):
             self.app.queue(self.display_atom_opt, sequence)
+
+            # Saving tof params into logging.hdf5
+            logging.info("Updating logging.hdf5 with tof params...")
+
+            # Appends sequence information as a subgroup for atom num optimization
+            with h5py.File(_output_log_path(), "a") as logfile:
+                lf = logfile.create_group("/atomnum_sequence/" + str(time.strftime('%H:%M:%S'))) # Sets name to be timestamp in group
+                lf.attrs['filename'] = str([shot.name for shot in sequence.shots])
+                lf.create_dataset("atom_number", data = sequence.atom_number)
+
+                for label, value in config.logdict.items(): # Appends config snapshot
+                    lf.attrs[label] = value
 
     def _get_shot_selection(self, params):
         selection = self.app.shot_presenter.shotlist_selection
@@ -99,4 +112,4 @@ class SequencePresenter:
         """Sets the path directory for generating a log file in the raw data folder"""
         output = Path("../Raw Data/").joinpath(str(date.today()))
         output.mkdir(parents=True, exist_ok=True)
-        return output.joinpath("logging.csv")
+        return output.joinpath("logging.hdf5")

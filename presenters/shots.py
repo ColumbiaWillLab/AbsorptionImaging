@@ -1,5 +1,4 @@
 import logging
-import csv
 import os.path
 from os import path
 
@@ -8,6 +7,8 @@ from datetime import date
 from collections import deque
 from threading import Lock
 
+import h5py
+import time
 from matplotlib.figure import Figure
 
 from utils.threading import mainthread
@@ -53,30 +54,29 @@ class ShotPresenter:
 
         # Saves fit params to log file
         cmnts = self.settings_view.get_comment()
-        abratio = ""
-        threeroi_array = []
-        if config.three_roi_enabled: # only appends value if threeroi is enabled
-            abratio = shot.three_roi_atom_number["a_b_ratio"]
-            threeroi_array = config.threeroi
-
         logging.info("Updating logging.csv for shot %s with comment %s " % (name, cmnts))
 
         # Checks if log file already exists, if not creates a new one
-        if not path.exists(_output_log_path(name)):
-            with open(_output_log_path(name), 'w', newline='') as logfile:
-                writer = csv.DictWriter(logfile, fieldnames = config.logheader) # Pulls headers from config.ini
-                writer.writeheader()
+        with h5py.File(_output_log_path(name), "a") as logfile:
+            lf = logfile.create_group(str(time.strftime('%H:%M:%S'))) # creates group based on 24hr timestamp
+            lf.create_dataset("atom", data = shot.data)
+            lf.create_dataset("beam", data = shot.beam)
+            lf.create_dataset("dark", data = shot.dark)
+            lf.attrs['filename'] = str(name)
+            lf.attrs['atom_number'] = shot.atom_number
 
-        # Appends requisite data
-        with open(_output_log_path(name), 'a', newline='') as logfile:
-            writer = csv.DictWriter(logfile, fieldnames = config.logheader) # Pulls headers from config.ini
-            writer.writerow({"filename" : name,
-                             "magnification" : config.magnification,
-                             "atom number" : shot.atom_number,
-                             "fitted shot" : config.fit,
-                             "threeroi" : threeroi_array,
-                             "a_b_ratio" : abratio,
-                             "Comments" : cmnts})
+            for label, value in config.logdict.items(): # Appends config snapshot
+                lf.attrs[label] = value
+
+            if config.roi_enabled: # only appends if roi is enabled
+                lf.attrs["roi"] = config.roi
+                lf.attrs['fit_vars'] = shot.fit.best_values
+
+            if config.three_roi_enabled: # only appends value if threeroi is enabled
+                lf.attrs['a_b_ratio'] = shot.three_roi_atom_number["a_b_ratio"]
+                lf.attrs["threeroi"] = config.threeroi
+
+            lf.attrs["comments"] = cmnts
 
         # Check if ToF or optimization
         self.app.sequence_presenter.add_shot(shot)
@@ -141,7 +141,7 @@ def _output_path(name):
     return output.joinpath(f"{name}.png")
 
 def _output_log_path(name):
-    """Sets the path directory for generating a log file in the raw data folder"""
+    """Sets the path directory for generating a log file in hdf5 format in the raw data folder"""
     output = Path("../Raw Data/").joinpath(str(date.today()))
     output.mkdir(parents=True, exist_ok=True)
-    return output.joinpath("logging.csv")
+    return output.joinpath("logging.hdf5")

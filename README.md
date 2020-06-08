@@ -1,4 +1,4 @@
-# AbsorptionImaging v0.3.2b
+# AbsorptionImaging v0.3.2c
 
 ## Table of contents
 * [General info](#general-info)
@@ -135,43 +135,27 @@ git tag v0.x.x
 git push origin v0.x.x
 ```
 
-## Logging.csv
-Every time a shot or sequence is processed, relevant variables are saved in logging.csv, found in the "../Raw Data/" folder.
+## Logging.hdf5
+For documentation and recording of analysis results, we use the hdf5 format. For more information on the file format, you can refer to https://www.hdfgroup.org/.
 
-The index for the variables saved under the header are as follows:
-["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)"]
+Related documentation on the Python package can be found https://www.h5py.org/.
 
-1. filename 
-    returns shot.name / timestamp of the three shots
-    - str() single image by default
-    - list() for a processed sequence
+Every time a shot or sequence is processed, relevant variables are saved in logging.hdf5, found in the "../Raw Data/" folder. Accessing of the data can be done with the hdf5viewer, installed separately or via Python.
 
-2. magnification
-    returns config.magnification
+The file structure for the HDF5 format is as follows:
 
-3. atom number
-    returns the processed shot.atom_number
-    - float() for a single show
-    - array(float()) for tof sequence
+logging.hdf5
+├── HH:MM:SS
+├── HH:MM:SS
+├── tof_sequence
+│   ├── HH:MM:SS
+│   └── HH:MM:SS
+└── atomnum_sequence
+    ├── HH:MM:SS
+    └── HH:MM:SS
 
-4. fitted shot
-    returns True if shot was fitted
+Each processed object is indexed by the 24hr timestamp (HH:MM:SS) it has been processed at. Each timestamp object contains the full dataset (atom,beam,dark), and can be identified via its variables.
 
-5. tof_sequence
-    returns True for processed tof_sequence
+It contains a snapshot of its associated config settings, filename, and as much relevant experimental parameters.
 
-6. time_sequence
-    returns list of user-input tof values
-
-7. average_T (uK)
-    returns fitted averaged temperature in uK for tof sequence
-
-8. "threeroi"
-    returns [] if threeroi is not enabled
-    returns three roi array() if enabled
-
-9. a_b_ratio
-    returns the calculated atom ratio between ROI A and ROI B if threeroi is enabled
-
-10. Comments
-    returns input string in "Settings" tab.
+For time of flight (tof_sequence) and atom number optimization (atomnum_sequence), they are saved as a subgroup. Datasets are not saved as part of the sequence, but the used shots and their associated filenames can be found as a list variable.

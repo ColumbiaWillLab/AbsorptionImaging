@@ -19,7 +19,7 @@ class MainWindow(ttk.Frame):
 
         # Initialize root Tk widget and state
         self.master = tk.Tk()
-        self.master.title("Absorption Imager")
+        self.master.title("Absorption Imaging")
         self.master.state("zoomed")
 
         super().__init__(self.master)
