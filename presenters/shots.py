@@ -54,7 +54,7 @@ class ShotPresenter:
 
         # Saves fit params to log file
         cmnts = self.settings_view.get_comment()
-        logging.info("Updating logging.csv for shot %s with comment %s " % (name, cmnts))
+        logging.info("Updating logging.hdf5 for shot %s with comment %s " % (name, cmnts))
 
         # Checks if log file already exists, if not creates a new one
         with h5py.File(_output_log_path(name), "a") as logfile:

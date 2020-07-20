@@ -56,7 +56,7 @@ class Settings(ttk.Frame):
         self.var = tk.StringVar()
         comments_entry = ttk.Entry(frame, textvariable=self.var)
         comments_entry.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
-        #ttk.Label(frame, text="Any comments are automatically appended in 'logging.csv' .").grid(row=5, column=0, columnspan=3)
+        #ttk.Label(frame, text="Any comments are automatically appended in 'logging.hdf5' .").grid(row=5, column=0, columnspan=3)
 
         # Updating comments strategy
         self.update_comments = ttk.Button(frame, text="Update", command=self._update_comments)
