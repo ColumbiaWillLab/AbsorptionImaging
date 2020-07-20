@@ -50,7 +50,7 @@ class Settings(ttk.Frame):
             command=lambda val: self.save_config("colormap", val),
         ).grid(row=0, column=1)
 
-        # Defines comment box for saving in logging.csv
+        # Defines comment box for saving in logging.hdf5
         ttk.Label(frame, text="Logging.csv comments").grid(row=2, column=0, columnspan=2)
         self.comment_string = ""
         self.var = tk.StringVar()
