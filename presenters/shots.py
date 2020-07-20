@@ -144,4 +144,4 @@ def _output_log_path(name):
     """Sets the path directory for generating a log file in hdf5 format in the raw data folder"""
     output = Path("../Raw Data/").joinpath(str(date.today()))
     output.mkdir(parents=True, exist_ok=True)
-    return output.joinpath("logging.hdf5")
+    return output.joinpath("000_logging.hdf5")
