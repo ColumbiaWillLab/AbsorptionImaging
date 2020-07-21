@@ -9,6 +9,8 @@ from views.settings import MplFigure, Settings
 from views.shots import ShotList, ShotFit, ExperimentParams, ThreeROI
 from views.sequences import ToFFit, AtomNumberOptimization
 
+from config import config
+
 
 class MainWindow(ttk.Frame):
     """Main wrapper class for the GUI. Acts as parent frame for interior widgets."""
@@ -19,7 +21,8 @@ class MainWindow(ttk.Frame):
 
         # Initialize root Tk widget and state
         self.master = tk.Tk()
-        self.master.title("Absorption Imaging")
+        #self.master.title("Absorption Imaging")
+        self.master.title(config.get("program", "name"))
         self.master.state("zoomed")
 
         super().__init__(self.master)

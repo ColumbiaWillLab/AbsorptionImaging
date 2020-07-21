@@ -26,6 +26,7 @@ class Config(configparser.ConfigParser):
         self.roi_enabled = False
         self.three_roi_enabled = False
         self.fix_center = False
+        self.fluor = False
 
     def save(self):
         """Save current state to file."""
@@ -181,7 +182,11 @@ class Config(configparser.ConfigParser):
                 "repump_time(ms)" : self.repump_time,
                 "atom_mass(kg)" : self.atom_mass
             }
-        #return ["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)", "threeroi", "a_b_ratio", "Comments"]
 
+    def program_name(self):
+        try:
+            return self.get("program", "name")
+        except configparser.NoOptionError:
+            return "Absorption Imaging"
 
 config = Config("config.ini")

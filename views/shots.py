@@ -445,6 +445,16 @@ class FitControl(ttk.LabelFrame):
         )
         enable_fit_btn.grid(row=1, column=0, sticky="w")
 
+        self.enable_fluorescence = tk.BooleanVar()
+        self.enable_fluorescence.set(config.fluor)
+        enable_fluorescence_btn = ttk.Checkbutton(
+            self,
+            text="Enable Fluor",
+            variable=self.enable_fluorescence,
+            command=self._toggle_fluorescence
+        )
+        enable_fluorescence_btn.grid(row=1, column=1, sticky="w")
+
         self.fit_against = tk.StringVar(
             self, name="fit_against", value=self._get_fit_against()
         )
@@ -484,6 +494,9 @@ class FitControl(ttk.LabelFrame):
         config.fix_z0 = self.fix_z0.get()
         config.save()
 
+    def _toggle_fluorescence(self):
+        config.fluor = self.enable_fluorescence.get()
+        config.save()
 
 class ExperimentParams(ttk.Frame):
     """Tab for viewing and reconfiguring some experimental parameters,

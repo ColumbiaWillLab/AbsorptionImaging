@@ -51,7 +51,7 @@ class Settings(ttk.Frame):
         ).grid(row=0, column=1)
 
         # Defines comment box for saving in logging.hdf5
-        ttk.Label(frame, text="Logging.csv comments").grid(row=2, column=0, columnspan=2)
+        ttk.Label(frame, text="Logging.hdf5 comments").grid(row=2, column=0, columnspan=2)
         self.comment_string = ""
         self.var = tk.StringVar()
         comments_entry = ttk.Entry(frame, textvariable=self.var)
@@ -61,7 +61,7 @@ class Settings(ttk.Frame):
         # Updating comments strategy
         self.update_comments = ttk.Button(frame, text="Update", command=self._update_comments)
         self.update_comments.grid(row=4, column=1)
-        comments_entry.bind('<Return>', self._update_comments) 
+        comments_entry.bind('<Return>', self._update_comments)
 
     def save_config(self, name, val):
         if val == "Professor Mode":

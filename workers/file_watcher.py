@@ -5,6 +5,7 @@ import traceback
 from collections import defaultdict
 from pathlib import Path
 from datetime import date
+from config import config
 
 
 from watchdog.observers import Observer
@@ -38,15 +39,27 @@ class FileWatcher(Observer):
                     shot_bmps[name] += int(idx)
                     all_paths[f"{name}-{idx}"] = path
 
-        for name, num in shot_bmps.items():
-            if num == 6:  # Crude determination that all 3 images exist: 1 + 2 + 3
-                paths = [all_paths[f"{name}-{num}"] for num in range(1, 4)]
-                try:
-                    self.process_shot(name, paths)
-                    _move_raw_images(paths, failed=False)
-                except Exception as e:
-                    logging.error(traceback.format_exc())
-                    _move_raw_images(paths, failed=True)
+        if config.fluor == False: # For Normal Absorption 3-shot
+            for name, num in shot_bmps.items():
+                if num == 6:  # Crude determination that all 3 images exist: 1 + 2 + 3
+                    paths = [all_paths[f"{name}-{num}"] for num in range(1, 4)]
+                    try:
+                        self.process_shot(name, paths)
+                        _move_raw_images(paths, failed=False)
+                    except Exception as e:
+                        logging.error(traceback.format_exc())
+                        _move_raw_images(paths, failed=True)
+        else: # Fluorescence shot + Absorption 3-shot
+            for name, num in shot_bmps.items():
+                ### Add option for 4 image processing
+                if num == 10:  # Crude determination that all 3 images exist: 1 + 2 + 3
+                    paths = [all_paths[f"{name}-{num}"] for num in range(1, 5)]
+                    try:
+                        self.process_shot(name, paths)
+                        _move_raw_images(paths, failed=False)
+                    except Exception as e:
+                        logging.error(traceback.format_exc())
+                        _move_raw_images(paths, failed=True)
 
 
 def _create_handler(callback):

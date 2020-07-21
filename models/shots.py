@@ -30,7 +30,10 @@ class Shot:
         bmps = map(imageio.imread, bmp_paths)
         bmps = map(lambda x: x.astype("int16"), bmps)  # prevent underflow
 
-        (self.data, self.beam, self.dark) = bmps
+        if config.fluor == False: # For normal absorption imaging 3-shot
+            (self.data, self.beam, self.dark) = bmps
+        else:
+            (self.mot, self.data, self.beam, self.dark) = bmps
         self.shape = self.data.shape
         self.name = name
 
