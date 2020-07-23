@@ -1,9 +1,14 @@
-# AbsorptionImaging v0.3.2c
+# AbsorptionImaging v0.3.3
 
 ## Table of contents
 * [General info](#general-info)
 * [Features](#features)
 * [Setup](#setup)
+* [Updates](#Updates)
+
+## Updates
+### v0.3.3
+Added processing for additional fluorescence shot after MOT loading. Crashes with wrong input and refitting of old shots to be fixed.
 
 ## General info
 Configurable absorption imaging pipeline for ultracold atom experiments. Computes and fits physical properties from raw camera output.
