@@ -142,6 +142,16 @@ class Shot:
         self.fit_1D = None
 
     @property
+    def MOT_fluorescence(self):
+        """Processes a MOT fluorescence image and outputs the counts"""
+        countss = np.subtract(self.mot, self.dark)
+        np.clip(countss, a_min=0, a_max=255, out=countss)
+
+        threshold = 5.39e6
+
+        return np.sum(countss) / threshold * 100
+
+    @property
     def atom_number(self):
         """Calculates the total atom number from the transmission ROI values."""
         # light and camera parameters

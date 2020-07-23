@@ -110,7 +110,6 @@ class ShotPresenter:
             self.list_view.focus(shot)
 
         if config.three_roi_enabled:
-            #self.threeroi_view.threeroi_counts = shot.three_roi_atom_number
             self.threeroi_view.display(shot.three_roi_atom_number) 
 
     @mainthread
