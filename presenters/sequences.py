@@ -70,7 +70,7 @@ class SequencePresenter:
             logging.info("Updating logging.hdf5 with tof params...")
 
             # Appends sequence information as a subgroup tof optimization
-            with h5py.File(self._output_log_path(), "a") as logfile:
+            with h5py.File(_output_log_path(), "a") as logfile:
                 lf = logfile.create_group("/tof_sequence/" + str(time.strftime('%H:%M:%S'))) # Sets name to be timestamp in subgroup
                 lf.attrs['filename'] = str([shot.name for shot in sequence.shots])
                 lf.create_dataset("atom_number", data = sequence.atom_number)
