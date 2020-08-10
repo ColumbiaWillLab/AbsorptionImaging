@@ -18,7 +18,7 @@ class ShotList(ttk.Frame):
         super().__init__(master)
         self.pack(fill="both", expand=True)
 
-        kw["columns"] = ("atoms", "sigma_x", "sigma_y")
+        kw["columns"] = ("atoms",  "sigma_x", "sigma_y", "MOT")
         kw["selectmode"] = "extended"
         self.tree = ttk.Treeview(self, **kw)
         self.tree.pack(side="left", fill="both", expand=True)
@@ -28,15 +28,17 @@ class ShotList(ttk.Frame):
         vsb.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=vsb.set)
 
-        self.tree.column("#0", anchor="w", width=200)
+        self.tree.column("#0", anchor="w", width=175)
         self.tree.column("atoms", anchor="w", width=100, stretch=False)
-        self.tree.column("sigma_x", anchor="w", width=100, stretch=False)
-        self.tree.column("sigma_y", anchor="w", width=100, stretch=False)
+        self.tree.column("sigma_x", anchor="w", width=75, stretch=False)
+        self.tree.column("sigma_y", anchor="w", width=75, stretch=False)
+        self.tree.column("MOT", anchor="w", width=75, stretch=False)
 
         self.tree.heading("#0", text="Shot")
         self.tree.heading("atoms", text="Atom Number")
         self.tree.heading("sigma_x", text="Std. Dev. X")
         self.tree.heading("sigma_y", text="Std. Dev. Y")
+        self.tree.heading("MOT", text="MOT%")
 
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<Return>", self._on_return_keypress)
@@ -54,7 +56,19 @@ class ShotList(ttk.Frame):
                     shot.fit.best_values["sy"] * config.pixel_size,
                 )
             else:
-                values = (shot.atom_number,)
+                values = (
+                    shot.atom_number,
+                    False, # Outputs False if not fitting
+                    False, # Outputs False if not fitting
+                )
+            if config.fluor == True:
+                try:
+                    values += (
+                        shot.MOT_fluorescence,
+                    )
+                except AttributeError:
+                    logging.debug("Fluorescence picture not taken in this shot sequence.")
+                    pass
             self.tree.insert(
                 "",
                 "end",
