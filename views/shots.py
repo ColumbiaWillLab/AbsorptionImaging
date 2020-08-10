@@ -495,6 +495,7 @@ class FitControl(ttk.LabelFrame):
         config.save()
 
     def _toggle_fluorescence(self):
+        logging.info("Fluorescence Mode Enabled")
         config.fluor = self.enable_fluorescence.get()
         config.save()
 
