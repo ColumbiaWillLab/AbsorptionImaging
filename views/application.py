@@ -4,6 +4,7 @@ import tkinter as tk
 import tkinter.font as font
 import tkinter.ttk as ttk
 
+from config import config
 from views.logs import LogTextBox
 from views.settings import MplFigure, Settings
 from views.shots import ShotList, ShotFit, ExperimentParams, ThreeROI
@@ -19,7 +20,11 @@ class MainWindow(ttk.Frame):
 
         # Initialize root Tk widget and state
         self.master = tk.Tk()
-        self.master.title("Absorption Imaging")
+        # Calls name defined in config
+        try:
+            self.master.title(config.name)
+        except:
+            self.master.title("Absorption Imaging")
         self.master.state("zoomed")
 
         super().__init__(self.master)

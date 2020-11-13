@@ -182,6 +182,10 @@ class Config(configparser.ConfigParser):
                 "atom_mass(kg)" : self.atom_mass
             }
         #return ["filename", "magnification", "atom number", "fitted shot", "tof_sequence", "time_sequence", "average_T (uK)", "threeroi", "a_b_ratio", "Comments"]
-
+    ##### Program Settings #####
+    @property
+    def name(self):
+        """Returns program name."""
+        return self.get("program", "name")
 
 config = Config("config.ini")
