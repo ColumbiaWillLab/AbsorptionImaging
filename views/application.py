@@ -21,7 +21,11 @@ class MainWindow(ttk.Frame):
 
         # Initialize root Tk widget and state
         self.master = tk.Tk()
-        self.master.title(config.get("program", "name"))
+        try:
+            self.master.title(config.get("program", "name"))
+        except:
+            self.master.title("Absorption Imaging")
+
         self.master.state("zoomed")
 
         super().__init__(self.master)
