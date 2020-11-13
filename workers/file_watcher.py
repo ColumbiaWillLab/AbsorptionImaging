@@ -40,6 +40,7 @@ class FileWatcher(Observer):
 
         for name, num in shot_bmps.items():
             if num == 6:  # Crude determination that all 3 images exist: 1 + 2 + 3
+                # If additional shot -0, ignores
                 paths = [all_paths[f"{name}-{num}"] for num in range(1, 4)]
                 try:
                     self.process_shot(name, paths)
